@@ -18,7 +18,7 @@ $plugin = array(
  * @param $properties
  *   Associative array of properties defining the job.
  * @return
- *   Result of the command run
+ *   Result of the command run.
  */
 function worker_script_execute(array $properties) {
   return worker_execute_output($properties['command']);
