@@ -6,7 +6,16 @@
  * @author Jimmy Berry ("boombatower", http://drupal.org/user/214218)
  */
 
+/**
+ * Perform the given job.
+ *
+ * @param $properties
+ *   Associative array of job properties.
+ * @return
+ *   The result of the job or FALSE.
+ */
 function worker_job_perform(array $properties) {
+  // Ensure that the job plugin can be loaded.
   if ($plugin = worker_plugins_get('worker', $properties['plugin'])) {
     worker_log('Starting job ' . $properties['item']->data['nid'] . '.' . $properties['item']->data['vid'] . '.' . $properties['item']->data['delta'] . '.');
     $result = $plugin['perform']($properties);
