@@ -9,102 +9,11 @@
 worker_include('plugins');
 
 /**
- * Apply a patch in the working directory.
- *
- * @param $patch
- *   Path to patch file.
- * @return
- *   TRUE if successfull, otherwise FALSE.
- */
-function worker_patch_apply($patch) {
-  return worker_execute('patch -p0 -i ' . escapeshellarg($patch));
-}
-
-/**
- * Get a list of all files modified by a patch.
- *
- * @param
- *   Path to patch file, which must be in the unified format.
- * @return
- *   List of files modified by the patch.
- */
-function worker_patch_modified_files($patch) {
-  // Load the patch file and use regular expression to find all files modified
-  // by the patch.
-  $contents = file_get_contents($patch);
-  preg_match_all('/^[\+-]{3} (.*?)\s/m', $contents, $matches, PREG_SET_ORDER);
-
-  $files = array();
-  foreach ($matches as $match) {
-    // Ignore reference to /dev/null which will occur when a file is being
-    // added or removed.
-    if ($match[1] != '/dev/null') {
-      $files[$match[1]] = $match[1];
-    }
-  }
-  return array_values($files);
-}
-
-/**
- * Wrapper for PHP exec() function.
- *
- * All commands executed on the worker should be run through this command or
- * worker_execute_output(). If the exit status is non-zero the occurance will
- * be logged.
- *
- * @param $command
- *   Command to execute.
- * @param $return_output
- *   (Optional) Return the output of the command instead of TRUE or FALSE.
- * @param $capture_stderr
- *   Capture the stderr as part of the output.
- * @return
- *   If successfull then TRUE or the output of the command, otherwise FALSE.
- */
-function worker_execute($command, $return_output = FALSE, $capture_stderr = TRUE) {
-  // Redirect the stderr to stdout so it is also captured.
-  if ($capture_stderr) {
-    $command .= ' 2>&1';
-  }
-
-  // Execute the command and capture the output and status.
-  exec(escapeshellcmd($command), $output, $status);
-
-  // If that exit status is non-zero then log the occurance.
-  if ($status != 0) {
-    worker_log("The following command generated a non-zero exit status of $status:\n" .
-      "$command\n" .
-      ($output ? trim(implode("\n", $output)) : '<<no output>>'));
-    return FALSE;
-  }
-  return $return_output ? $output : TRUE;
-}
-
-/**
- * Wrapper for PHP exec() function that return the output.
- *
- * @param $command
- *   Command to execute.
- * @param $capture_stderr
- *   Capture the stderr as part of the output.
- * @return
- *   If successfull then TRUE or the output of the command, otherwise FALSE.
- * @see worker_execute()
- */
-function worker_execute_output($command, $capture_stderr = TRUE) {
-  return worker_execute($command, TRUE, $capture_stderr);
-}
-
-function worker_log($string) {
-  // @TODO: Implement logging.
-}
-
-/**
  * Load a worker include file.
  *
  * @param $include
  *   Name of include file, exluding the .inc.
  */
 function worker_include($include) {
-  require_once drupal_get_path('module', 'conduit') . '/includes/' . $include . '.inc';
+  require_once drupal_get_path('module', 'worker') . '/includes/' . $include . '.inc';
 }

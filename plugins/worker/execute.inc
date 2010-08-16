@@ -9,17 +9,17 @@
 $plugin = array(
   'title' => t('Execute'),
   'description' => t('Provides basic command execution.'),
-  'execute' => 'worker_script_execute',
+  'perform' => 'worker_execute_perform',
 );
 
 /**
- * Execute the job.
+ * Perform the job.
  *
  * @param $properties
  *   Associative array of properties defining the job.
  * @return
  *   Result of the command run.
  */
-function worker_script_execute(array $properties) {
+function worker_execute_perform(array $properties) {
   return worker_execute_output($properties['command']);
 }
