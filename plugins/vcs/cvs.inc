@@ -4,7 +4,7 @@
  * Provide basic CVS repository interface plugin.
  *
  * All CVS repository URLs should use the format demonstrated below:
- * cvs://:pserver:anonymous:anonymous@example.com:/project/path/module1/HEAD.
+ * cvs://:pserver:anonymous:anonymous@example.com:/repository/path:module/path:revision.
  *
  * @author Jimmy Berry ("boombatower", http://drupal.org/user/214218)
  */
@@ -29,7 +29,7 @@ $plugin = array(
  *   Printable version of the URL.
  */
 function worker_cvs_print($url) {
-  $path_parts = explode('/', parse_url($url, PHP_URL_PATH));
+  $path_parts = explode(':', parse_url($url, PHP_URL_PATH));
   return $path_parts[count($path_parts) - 2];
 }
 
@@ -44,15 +44,8 @@ function worker_cvs_print($url) {
 function worker_cvs_checkout($url) {
   $parts = parse_url($url);
 
-  // Exclude the last two items of the path (module and revision).
-  $path = implode('/', explode('/', $parts['path'], -2));
-
-  // Break apart the path in order to extract the last two items.
-  $path_parts = explode('/', $parts['path']);
-  $count = count($path_parts);
-
-  $module = escapeshellarg($path_parts[$count - 2]);
-  $revision = escapeshellarg($path_parts[$count - 1]);
+  // Break apart path using ':' to get repository path, module, and revision.
+  list($path, $module, $revision) = explode(':', $parts['path']);
 
   // Build the CVS root using the parts of the URL.
   $cvs_root = escapeshellarg(':' . $parts['pass'] . '@' . $parts['host'] . ':' . $path);
@@ -63,7 +56,10 @@ function worker_cvs_checkout($url) {
 
   // Execute CVS checkout command with level 9 compression and checkout into
   // the current working directory.
-  return worker_execute("cvs -z9 -d $cvs_root checkout -d ../$directory -r $revision $module");
+  chdir('..');
+  $return = worker_execute("cvs -z9 -d $cvs_root checkout -d $directory -r $revision $module");
+  chdir($directory);
+  return $return;
 }
 
 /**
