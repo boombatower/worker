@@ -7,6 +7,11 @@
  */
 
 /**
+ * Root directory for job.
+ */
+define('JOB_ROOT', DRUPAL_ROOT . '/' . file_directory_path() . '/job');
+
+/**
  * Perform the given job.
  *
  * @param $properties
@@ -14,15 +19,98 @@
  * @return
  *   The result of the job or FALSE.
  */
-function worker_job_perform(array $properties) {
+function worker_perform(array $properties) {
+  $result = FALSE;
+
   // Ensure that the job plugin can be loaded.
   if ($plugin = worker_plugins_get('worker', $properties['plugin'])) {
     worker_log('Starting job ' . $properties['item']->data['nid'] . '.' . $properties['item']->data['vid'] . '.' . $properties['item']->data['delta'] . '.');
-    $result = $plugin['perform']($properties);
-    worker_log('Job complete!');
-    return $result;
+
+    // Perform preparation and then job.
+    if (worker_prepare($properties)) {
+      // Ensure the working directory is set to the DRUPAL_ROOT and invoke the
+      // plugin with the job properties.
+      chdir(DRUPAL_ROOT);
+      $result = $plugin['perform']($properties);
+    }
+
+    chdir(DRUPAL_ROOT);
+    worker_log('Job exiting.');
   }
-  return FALSE;
+  return $result;
+}
+
+/**
+ * Perform preparation needed before job runs.
+ *
+ * @param $properties
+ *   Associative array of job properties.
+ * @return
+ *   TRUE if successfull, otherwise FALSE.
+ */
+function worker_prepare(array $properties) {
+  // Ensure the job root directory is available.
+  if (!worker_directory_prepare()) {
+    worker_log('Failed to prepare job root directory.');
+    return FALSE;
+  }
+
+  // If any version control repositories specified then process them.
+  if (!empty($properties['vcs'])) {
+    if (!worker_vcs($properties)) {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+/**
+ * Prepare the job root directory.
+ *
+ * @return
+ *   TRUE if successfull, otherwise FALSE.
+ */
+function worker_directory_prepare() {
+  // If job directory exists then clear it out.
+  if (file_exists(JOB_ROOT)) {
+    file_unmanaged_delete_recursive(JOB_ROOT);
+  }
+
+  // Create job directory and chdir() to it.
+  $directory = JOB_ROOT;
+  return file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+}
+
+/**
+ * Process all version control repositories.
+ *
+ * @param $properties
+ *   Associative array of job properties.
+ */
+function worker_vcs(array $properties) {
+  // Cycle through all repositories until complete or an error is encountered.
+  foreach ($properties['vcs'] as $path => $url) {
+    // Load plugin appropriate for handlign scheme.
+    $scheme = parse_url($url, PHP_URL_SCHEME);
+    if ($vcs = worker_plugins_get('vcs', $scheme)) {
+      // Ensure the path specified exists.
+      $directory = JOB_ROOT . '/' . ltrim($path, './');
+      file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+      worker_chdir($path);
+
+      // Checkout from the repository.
+      worker_log('Checkout [' . $vcs['print']($url) . '] into [' . $path . '].');
+      if (!$vcs['checkout']($url)) {
+        return FALSE;
+      }
+    }
+    else {
+      worker_log('Unsupported scheme in [' . $url . '].');
+      return FALSE;
+    }
+  }
+  return TRUE;
 }
 
 /**
@@ -116,6 +204,17 @@ function worker_execute_output($command, $capture_stderr = TRUE) {
 }
 
 /**
+ * Wrapper for PHP chdir() function.
+ *
+ * @param $directory
+ *   Directory within the job root to switch to.
+ */
+function worker_chdir($directory = '') {
+  $directory = ltrim($directory, './');
+  chdir(JOB_ROOT . '/' . $directory);
+}
+
+/**
  * Add the string to the log.
  *
  * @param $string
@@ -129,7 +228,7 @@ function worker_log($string) {
   // blank log file.
   if (!$start) {
     $start = microtime(TRUE);
-    $log_file = file_build_uri('job.log');
+    $log_file = DRUPAL_ROOT . '/' . file_directory_path() . '/job.log';
     file_put_contents($log_file, '');
   }
 
