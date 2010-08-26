@@ -147,17 +147,6 @@ function worker_ssh(array $properties) {
     $delta = 0;
     foreach ($properties['ssh'] as $info) {
       worker_log('Adding ssh key for host ' . $info['host'] . '.');
-
-      // Ensure the required fields are provided.
-      if (empty($info['key']) || empty($info['host']) || empty($info['user'])) {
-        // @TODO Worker set_error().
-      }
-
-      // Add the default value for the port field if not specified.
-      if (empty($info['port'])) {
-        $info['port'] = 22;
-      }
-
       // Write the ssh key to a file and set the appropriate permissions.
       $file = $home . '/.ssh/id_rsa.' . ++$delta;
       file_put_contents($file, $info['key']);
