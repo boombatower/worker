@@ -22,6 +22,23 @@ function worker_plugins_get($type, $plugin) {
 }
 
 /**
+ * Fetch metadata on the plugin appropriate for handling the URL scheme.
+ *
+ * @param $url
+ *   A VCS repository URL.
+ * @return
+ *   An array of information about the requested plugin.
+ * @see worker_plugins_get()
+ */
+function worker_plugins_get_vcs($url) {
+  // Note that parse_url() does  not work since git urls for example are
+  // non-standard enough that it will not parse them at all. Possibly just use
+  // custom format?
+  list($scheme) = explode('://', $url);
+  return worker_plugins_get('vcs', $scheme);
+}
+
+/**
  * Fetch metadata for all plugins.
  *
  * @return

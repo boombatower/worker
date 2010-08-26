@@ -2,6 +2,7 @@ name = Worker
 description = Worker for the conduit system.
 package = Conduit
 core = 7.x
+php = 5.3.3
 files[] = worker.module
 
 files[] = plugins/vcs/bzr.inc

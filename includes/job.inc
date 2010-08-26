@@ -93,6 +93,13 @@ function worker_prepare(array $properties) {
     }
   }
 
+  // If patches to apply then process them.
+  if (!empty($properties['patch'])) {
+    if (!worker_patch($properties)) {
+      return FALSE;
+    }
+  }
+
   return TRUE;
 }
 
@@ -117,6 +124,8 @@ function worker_directory_prepare($directory = JOB_ROOT) {
  *
  * @param $properties
  *   Associative array of job properties.
+ * @return
+ *   TRUE if successfull, otherwise FALSE.
  */
 function worker_setup(array $properties) {
   foreach ($properties['setup'] as $command) {
@@ -133,6 +142,8 @@ function worker_setup(array $properties) {
  *
  * @param $properties
  *   Associative array of job properties.
+ * @return
+ *   TRUE if successfull, otherwise FALSE.
  */
 function worker_ssh(array $properties) {
   // Determine the web user home directory.
@@ -179,15 +190,14 @@ function worker_ssh(array $properties) {
  *
  * @param $properties
  *   Associative array of job properties.
+ * @return
+ *   TRUE if successfull, otherwise FALSE.
  */
 function worker_vcs(array $properties) {
   // Cycle through all repositories until complete or an error is encountered.
   foreach ($properties['vcs'] as $path => $url) {
-    // Load plugin appropriate for handling scheme. Note that parse_url() does
-    // not work since git urls for example are non-standard enough that it will
-    // not parse them at all. Possibly just use custom format?
-    list($scheme) = explode('://', $url);
-    if ($vcs = worker_plugins_get('vcs', $scheme)) {
+    // Load plugin appropriate for handling the scheme.
+    if ($vcs = worker_plugins_get_vcs($url)) {
       // Ensure the path specified exists.
       worker_directory_prepare(JOB_ROOT . '/' . ltrim($path, './'));
       worker_chdir($path);
@@ -208,6 +218,71 @@ function worker_vcs(array $properties) {
     }
   }
   return TRUE;
+}
+
+/**
+ * Apply a list of patches.
+ *
+ * @param $properties
+ *   Associative array of job properties.
+ * @return
+ *   TRUE if successfull, otherwise FALSE.
+ */
+function worker_patch(array $properties) {
+  // Prepare patch storage directory.
+  worker_directory_prepare($directory = DRUPAL_ROOT . '/' . file_directory_path() . '/patch');
+
+  // Cycle through all the patches, download them and apply them.
+  $delta = 0;
+  foreach ($properties['patch'] as $url => $path) {
+    if ($vcs = worker_plugins_get_vcs($properties['vcs'][$path])) {
+      // Use the path specified as the root the patch is to be applied to. Use
+      // a delta to ensure patch file names do not conflict.
+      worker_chdir($path);
+      $local = worker_fetch($url, $directory, $delta++);
+      $name = basename($url);
+
+      // Ensure that path the patch is to be applied to is readable.
+      $path = $path ?: '/';
+      worker_log('Apply ' . $name . ' to ' . $path . '.');
+      if (!$vcs['apply']($local)) {
+        worker_log('Failed to apply patch ' . $name . '.');
+        return FALSE;
+      }
+      worker_log("Modified files:\n > " . implode("\n > ", $vcs['modified files']($local)));
+    }
+  }
+  chdir(DRUPAL_ROOT);
+  return TRUE;
+}
+
+/**
+ * Fetch a file and place in directory.
+ *
+ * @param $url
+ *   URL of file to fetch.
+ * @param $directory
+ *   Directory to place file in.
+ * @param $suffix
+ *   Suffix to append to the local name of the file.
+ * @return
+ *   Local path to file, or FALSE if retrieval/storage failed.
+ */
+function worker_fetch($url, $directory, $suffix = '') {
+  // Request the file at the given URL.
+  $response = drupal_http_request($url);
+  if ($response->code != 200) {
+    worker_log('Unable to fetch ' . $url . ' due to [' . $response->error . '].');
+    return FALSE;
+  }
+
+  // Save the file contents in the given directory.
+  $local = $directory . '/' . basename($url) . $suffix;
+  if (file_put_contents($local, $response->data) === FALSE) {
+    worker_log('Failed to save file data to ' . $local . '.');
+    return FALSE;
+  }
+  return $local;
 }
 
 /**
