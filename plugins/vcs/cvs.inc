@@ -97,6 +97,8 @@ function worker_cvs_revision() {
 
   $latest = 0;
   foreach ($lines as $line) {
+    // Looking for something like
+    // "date: 2001-04-16 13:21:21 -0500;  author: foo;  state: Exp;  lines: +56 -1;".
     if (preg_match('/date: (.*?);/', $line, $match)) {
       $latest = max(strtotime($match[1]), $latest);
     }
