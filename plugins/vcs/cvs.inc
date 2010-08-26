@@ -24,7 +24,7 @@ $plugin = array(
  * Get the short printable version of the URL.
  *
  * @param $url
- *   CVS repository URL.
+ *   The repository URL.
  * @return
  *   Printable version of the URL.
  */
@@ -34,10 +34,10 @@ function worker_cvs_print($url) {
 }
 
 /**
- * Checkout from CVS repository into working directory.
+ * Checkout from the repository into working directory.
  *
  * @param $url
- *   CVS repository URL.
+ *   The repository URL.
  * @return
  *   TRUE if successfull, otherwise FALSE.
  */
