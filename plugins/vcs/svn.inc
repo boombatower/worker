@@ -4,7 +4,7 @@
  * Provide basic svn repository interface plugin.
  *
  * All svn repository URLs should use the format demonstrated below:
- * svn://user@example.com:git/stuff.git. @TODO
+ * svn://http://example.com/svn/trunk
  *
  * @author Jimmy Berry ("boombatower", http://drupal.org/user/214218)
  */
