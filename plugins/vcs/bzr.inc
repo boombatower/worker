@@ -59,6 +59,8 @@ function worker_bzr_annotate($file) {
     $map = array();
     $number = 1;
     foreach ($lines as $line) {
+      // Annotate output should look like the following
+      // "127   author    20010310 | <?php".
       if (preg_match('/\d+\s+(.*?)\s+\d+\s+\|/', $line, $match)) {
         $map[$number++] = $match[1];
       }
@@ -76,6 +78,7 @@ function worker_bzr_revision() {
   $lines = worker_execute_output('bzr log -l 1');
 
     foreach ($lines as $line) {
+      // Looking for something like "revno: 16054".
       if (preg_match('/^revno: (\d+)$/m', $line, $match)) {
         return $match[1];
       }
