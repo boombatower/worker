@@ -1,10 +1,14 @@
 <?php
 /**
  * @file
- * Provide basic git repository interface plugin.
+ * Provide basic bzr repository interface plugin.
  *
- * All git repository URLs should use the format demonstrated below:
- * cvs://user@example.com:git/stuff.git.
+ * All bzr repository URLs should use the format demonstrated below:
+ * bzr://lp:~example-project/example/trunk.
+ *
+ * Also note that in order to checkout of launchpad you will need to add a
+ * command to run during setup to login the user that is to perform the
+ * checkout, for example: bzr launchpad-login example-user.
  *
  * @author Jimmy Berry ("boombatower", http://drupal.org/user/214218)
  */
@@ -56,16 +60,16 @@ function worker_bzr_checkout($url) {
 function worker_bzr_annotate($file) {
   $lines = worker_execute_output("bzr annotate --long --all $file");
 
-    $map = array();
-    $number = 1;
-    foreach ($lines as $line) {
-      // Annotate output should look like the following
-      // "127   author    20010310 | <?php".
-      if (preg_match('/\d+\s+(.*?)\s+\d+\s+\|/', $line, $match)) {
-        $map[$number++] = $match[1];
-      }
+  $map = array();
+  $number = 1;
+  foreach ($lines as $line) {
+    // Annotate output should look like the following
+    // "127   author    20010310 | <?php".
+    if (preg_match('/\d+\s+(.*?)\s+\d+\s+\|/', $line, $match)) {
+      $map[$number++] = $match[1];
     }
-    return $map;
+  }
+  return $map;
 }
 
 /**
@@ -77,11 +81,11 @@ function worker_bzr_annotate($file) {
 function worker_bzr_revision() {
   $lines = worker_execute_output('bzr log -l 1');
 
-    foreach ($lines as $line) {
-      // Looking for something like "revno: 16054".
-      if (preg_match('/^revno: (\d+)$/m', $line, $match)) {
-        return $match[1];
-      }
+  foreach ($lines as $line) {
+    // Looking for something like "revno: 16054".
+    if (preg_match('/^revno: (\d+)$/m', $line, $match)) {
+      return $match[1];
     }
-    return FALSE;
+  }
+  return FALSE;
 }
