@@ -60,15 +60,14 @@ function worker_git_checkout($url) {
  *   Associative array of line number ot committer ID.
  */
 function worker_git_annotate($file) {
-  $lines = worker_execute('cvs annotate ' . escapeshellarg($file));
+  $lines = worker_execute_output('git annotate ' . escapeshellarg($file));
 
   $map = array();
   $number = 1;
   foreach ($lines as $line) {
-    // Ignore empty lines and lines that do not start with a number or do not
-    // match the regular expression. The annotation line format looks like the
-    // following: 1.1         (some_username    10-Mar-01): <?php
-    if (!empty($line) && is_numeric($line[0]) && preg_match('/.*?\s+\((.*?)\s+.*?\)|/', $line, $match)) {
+    // Annotate should look like the following
+    // "3c44d80d        (Author    2010-07-28 02:44:58 -0500       1)<?php"
+    if (preg_match('/.*?\s+\(\s+(.*?)\s+.*?\)/', $line, $match)) {
       $map[$number++] = $match[1];
     }
   }
@@ -82,13 +81,14 @@ function worker_git_annotate($file) {
  *   Revision identifier.
  */
 function worker_git_revision() {
-  $lines = worker_execute_output('cvs log -bN');
+  $lines = worker_execute_output('git log -n 1');
 
-  $latest = 0;
   foreach ($lines as $line) {
-    if (preg_match('/date: (.*?);/', $line, $match)) {
-      $latest = max(strtotime($match[1]), $latest);
+    // Looking for something like
+    // "commit d8aec96e7b501d6727a5af28c0bbec43db6d1a14".
+    if (preg_match('/^commit (.*?)$/m', $line, $match)) {
+      return $match[1];
     }
   }
-  return $latest;
+  return FALSE;
 }
