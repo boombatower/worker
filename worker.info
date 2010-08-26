@@ -4,6 +4,7 @@ package = Conduit
 core = 7.x
 files[] = worker.module
 
+files[] = plugins/vcs/bzr.inc
 files[] = plugins/vcs/cvs.inc
 files[] = plugins/vcs/git.inc
 
