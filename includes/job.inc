@@ -55,6 +55,10 @@ function worker_prepare(array $properties) {
     return FALSE;
   }
 
+  if (!empty($properties['setup'])) {
+    worker_setup($properties);
+  }
+
   // If ssh keys specified then process them.
   if (!empty($properties['ssh'])) {
     worker_ssh($properties);
@@ -79,11 +83,24 @@ function worker_prepare(array $properties) {
 function worker_directory_prepare($directory = JOB_ROOT) {
   // If directory exists then clear it out.
   if (file_exists($directory)) {
-    file_unmanaged_delete_recursive(JOB_ROOT);
+    worker_delete_recursive($directory);
   }
 
   // Create directory.
   return file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+}
+
+/**
+ * Allow commands to be run during setup phase.
+ *
+ * @param $properties
+ *   Associative array of job properties.
+ */
+function worker_setup(array $properties) {
+  foreach ($properties['setup'] as $command) {
+    worker_log('Setup [' . $command . '].');
+    worker_execute(escapeshellcmd($command));
+  }
 }
 
 /**
@@ -269,6 +286,35 @@ function worker_execute_output($command, $capture_stderr = TRUE) {
 function worker_chdir($directory = '') {
   $directory = ltrim($directory, './');
   chdir(JOB_ROOT . '/' . $directory);
+}
+
+/**
+ * Delete a path recursively.
+ *
+ * Replacement for file_unmanaged_delete_recursive() since the latter will not
+ * always delete symbolic links which may be contained in a directory.
+ *
+ * @param $path
+ *   Path to directory or file that will be recursively deleted.
+ */
+function worker_delete_recursive($path) {
+  if (is_dir($path)) {
+    // Cycle through all entries in directory and recursively remove them.
+    $files = scandir($path);
+    foreach ($files as $file) {
+      if ($file != '.' && $file != '..') {
+        worker_delete_recursive($path . '/' . $file);
+      }
+    }
+
+    // Remove the directory itself.
+    rmdir($path);
+  }
+  else {
+    // Do not check if the file exists since the check may fail if the file is
+    // a symbolic link and the file should always exist.
+    unlink($path);
+  }
 }
 
 /**
