@@ -12,25 +12,12 @@
 $plugin = array(
   'title' => t('git'),
   'description' => t('Basic git repository interface plugin.'),
-  'print' => 'worker_git_print',
   'checkout' => 'worker_git_checkout',
   'annotate' => 'worker_git_annotate',
   'revision' => 'worker_git_revision',
   'apply' => 'worker_patch_apply',
   'modified files' => 'worker_patch_modified_files',
 );
-
-/**
- * Get the short printable version of the URL.
- *
- * @param $url
- *   The repository URL.
- * @return
- *   Printable version of the URL.
- */
-function worker_git_print($url) {
-  return $url; // @TODO
-}
 
 /**
  * Checkout from the repository into working directory.

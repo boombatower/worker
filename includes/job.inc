@@ -173,7 +173,7 @@ function worker_vcs(array $properties) {
       worker_chdir($path);
 
       // Checkout from the repository.
-      worker_log('Checkout [' . $vcs['print']($url) . '] into [' . $path . '].');
+      worker_log('Checkout [' . $url . '] into [' . $path . '].');
       if (!$vcs['checkout']($url)) {
         return FALSE;
       }

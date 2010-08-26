@@ -12,26 +12,12 @@
 $plugin = array(
   'title' => t('CVS'),
   'description' => t('Basic CVS repository interface plugin.'),
-  'print' => 'worker_cvs_print',
   'checkout' => 'worker_cvs_checkout',
   'annotate' => 'worker_cvs_annotate',
   'revision' => 'worker_cvs_revision',
   'apply' => 'worker_patch_apply',
   'modified files' => 'worker_patch_modified_files',
 );
-
-/**
- * Get the short printable version of the URL.
- *
- * @param $url
- *   The repository URL.
- * @return
- *   Printable version of the URL.
- */
-function worker_cvs_print($url) {
-  $path_parts = explode(':', parse_url($url, PHP_URL_PATH));
-  return $path_parts[count($path_parts) - 2];
-}
 
 /**
  * Checkout from the repository into working directory.

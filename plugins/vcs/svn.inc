@@ -12,25 +12,12 @@
 $plugin = array(
   'title' => t('svn'),
   'description' => t('Basic svn repository interface plugin.'),
-  'print' => 'worker_svn_print',
   'checkout' => 'worker_svn_checkout',
   'annotate' => 'worker_svn_annotate',
   'revision' => 'worker_svn_revision',
   'apply' => 'worker_patch_apply',
   'modified files' => 'worker_patch_modified_files',
 );
-
-/**
- * Get the short printable version of the URL.
- *
- * @param $url
- *   The repository URL.
- * @return
- *   Printable version of the URL.
- */
-function worker_svn_print($url) {
-  return $url; // @TODO
-}
 
 /**
  * Checkout from the repository into working directory.
