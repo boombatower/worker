@@ -20,7 +20,11 @@ define('JOB_ROOT', DRUPAL_ROOT . '/' . file_directory_path() . '/job');
  *   The result of the job or FALSE.
  */
 function worker_perform(array $properties) {
-  $result = FALSE;
+  $result = array(
+    'status' => 'failure',
+    'result' => NULL,
+    'error' => NULL,
+  );
 
   // Ensure that the job plugin can be loaded.
   if ($plugin = worker_plugins_get('worker', $properties['plugin'])) {
@@ -31,11 +35,25 @@ function worker_perform(array $properties) {
       // Ensure the working directory is set to the DRUPAL_ROOT and invoke the
       // plugin with the job properties.
       chdir(DRUPAL_ROOT);
-      $result = $plugin['perform']($properties);
+      if ($result['result'] = $plugin['perform']($properties)) {
+        $result['status'] = 'success';
+      }
     }
 
     chdir(DRUPAL_ROOT);
     worker_log('Job exiting.');
+  }
+
+  // Load log file contents as an array so the second to last line can be
+  // accessed if necessary.
+  $log = file(file_directory_path() . '/job.log');
+  $result['log'] = implode("\n", $log);
+
+  // If the job was a failure then use the second to last line from the log as
+  // the error message after trimming off the time offset.
+  if ($result['status'] == 'failure') {
+    array_pop($log);
+    $result['error'] = substr(array_pop($log), 12);
   }
   return $result;
 }
@@ -56,12 +74,16 @@ function worker_prepare(array $properties) {
   }
 
   if (!empty($properties['setup'])) {
-    worker_setup($properties);
+    if (!worker_setup($properties)) {
+      worker_log('Failed to complete execution of setup commands.');
+    }
   }
 
   // If ssh keys specified then process them.
   if (!empty($properties['ssh'])) {
-    worker_ssh($properties);
+    if (!worker_ssh($properties)) {
+      return FALSE;
+    }
   }
 
   // If version control repositories specified then process them.
@@ -99,8 +121,11 @@ function worker_directory_prepare($directory = JOB_ROOT) {
 function worker_setup(array $properties) {
   foreach ($properties['setup'] as $command) {
     worker_log('Setup [' . $command . '].');
-    worker_execute(escapeshellcmd($command));
+    if (!worker_execute(escapeshellcmd($command))) {
+      return FALSE;
+    }
   }
+  return TRUE;
 }
 
 /**
@@ -111,7 +136,7 @@ function worker_setup(array $properties) {
  */
 function worker_ssh(array $properties) {
   // Determine the web user home directory.
-  if ($home = array_pop(worker_execute_output('eval echo ~$(whoami)'))) {
+  if (($home = array_pop(worker_execute_output('eval echo ~$(whoami)'))) && is_dir($home)) {
     // Clean out .ssh directory and recreate it.
     worker_directory_prepare($home . '/.ssh');
 
@@ -146,12 +171,18 @@ function worker_ssh(array $properties) {
       file_put_contents($home . '/.ssh/config', $config, FILE_APPEND);
 
       // Add the host to the known_hosts file.
-      worker_execute('ssh -o StrictHostKeyChecking=no ' . escapeshellarg($info['host']) . ' exit');
+      $line = array_shift(worker_execute_output('ssh -o StrictHostKeyChecking=no ' . escapeshellarg($info['host']) . ' exit'));
+      if (preg_match('/Warning: Permanently added .*? to the list of known hosts./', $line)) {
+        // Coninue with next ssh key.
+        continue;
+      }
+      worker_log('Failed to setup ssh key for ' . $info['host'] . '.');
+      return FALSE;
     }
+    return TRUE;
   }
-  else {
-    // @TODO Worker set_error().
-  }
+  worker_log('Failed to determine the webuser home directory path.');
+  return FALSE;
 }
 
 /**
@@ -257,9 +288,8 @@ function worker_execute($command, $return_output = FALSE, $capture_stderr = TRUE
     worker_log("The following command generated a non-zero exit status of $status:\n" .
       "$command\n" .
       ($output ? trim(implode("\n", $output)) : '<<no output>>'));
-    return FALSE;
   }
-  return $return_output ? $output : TRUE;
+  return $return_output ? $output : $status == 0;
 }
 
 /**
