@@ -23,7 +23,7 @@ $plugin = array(
  * Checkout from the repository into working directory.
  *
  * @param $url
- *   The repository URL.
+ *   A VCS repository URL.
  * @return
  *   TRUE if successfull, otherwise FALSE.
  */
