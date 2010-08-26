@@ -7,5 +7,6 @@ files[] = worker.module
 files[] = plugins/vcs/bzr.inc
 files[] = plugins/vcs/cvs.inc
 files[] = plugins/vcs/git.inc
+files[] = plugins/vcs/svn.inc
 
 files[] = plugins/worker/execute.inc
