@@ -199,11 +199,11 @@ function worker_vcs(array $properties) {
     // Load plugin appropriate for handling the scheme.
     if ($vcs = worker_plugins_get_vcs($url)) {
       // Ensure the path specified exists.
-      worker_directory_prepare(JOB_ROOT . '/' . ltrim($path, './'));
+      worker_directory_prepare(JOB_ROOT . '/' . $path);
       worker_chdir($path);
 
       // Checkout from the repository.
-      worker_log('Checkout [' . $url . '] into [' . $path . '].');
+      worker_log('Checkout ' . $url . ' into /' . $path . '.');
       if (!$vcs['checkout']($url)) {
         return FALSE;
       }
@@ -235,7 +235,7 @@ function worker_patch(array $properties) {
   // Cycle through all the patches, download them and apply them.
   $delta = 0;
   foreach ($properties['patch'] as $url => $path) {
-    if ($vcs = worker_plugins_get_vcs($properties['vcs'][$path])) {
+    if (!empty($properties['vcs'][$path]) && ($vcs = worker_plugins_get_vcs($properties['vcs'][$path]))) {
       // Use the path specified as the root the patch is to be applied to. Use
       // a delta to ensure patch file names do not conflict.
       worker_chdir($path);
@@ -243,13 +243,16 @@ function worker_patch(array $properties) {
       $name = basename($url);
 
       // Ensure that path the patch is to be applied to is readable.
-      $path = $path ?: '/';
-      worker_log('Apply ' . $name . ' to ' . $path . '.');
+      worker_log('Apply ' . $name . ' to /' . $path . '.');
       if (!$vcs['apply']($local)) {
         worker_log('Failed to apply patch ' . $name . '.');
         return FALSE;
       }
       worker_log("Modified files:\n > " . implode("\n > ", $vcs['modified files']($local)));
+    }
+    else {
+      worker_log('No repository corresponds to path /' . $path . ' for ' . basename($url) . '.');
+      return FALSE;
     }
   }
   chdir(DRUPAL_ROOT);
@@ -378,7 +381,6 @@ function worker_execute_output($command, $capture_stderr = TRUE) {
  *   Directory within the job root to switch to.
  */
 function worker_chdir($directory = '') {
-  $directory = ltrim($directory, './');
   chdir(JOB_ROOT . '/' . $directory);
 }
 
