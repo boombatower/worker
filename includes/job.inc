@@ -74,31 +74,20 @@ function worker_prepare(array $properties) {
     return FALSE;
   }
 
-  if (!empty($properties['setup'])) {
-    if (!worker_setup($properties)) {
-      worker_log('Failed to complete execution of setup commands.');
-    }
+  if (!worker_setup($properties)) {
+    worker_log('Failed to complete execution of setup commands.');
   }
 
-  // If ssh keys specified then process them.
-  if (!empty($properties['ssh'])) {
-    if (!worker_ssh($properties)) {
-      return FALSE;
-    }
+  if (!worker_ssh($properties)) {
+    return FALSE;
   }
 
-  // If version control repositories specified then process them.
-  if (!empty($properties['vcs'])) {
-    if (!worker_vcs($properties)) {
-      return FALSE;
-    }
+  if (!worker_vcs($properties)) {
+    return FALSE;
   }
 
-  // If patches to apply then process them.
-  if (!empty($properties['patch'])) {
-    if (!worker_patch($properties)) {
-      return FALSE;
-    }
+  if (!worker_patch($properties)) {
+    return FALSE;
   }
 
   return TRUE;
