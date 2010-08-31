@@ -29,6 +29,7 @@ function worker_perform(array $properties) {
   // Ensure that the job plugin can be loaded.
   if ($plugin = worker_plugins_get('worker', $properties['plugin'])) {
     worker_log('Starting job ' . $properties['item']->data['nid'] . '.' . $properties['item']->data['vid'] . '.' . $properties['item']->data['delta'] . '.');
+    worker_verbose($properties['verbose']);
 
     // Perform preparation and then job.
     if (worker_prepare($properties)) {
@@ -351,7 +352,7 @@ function worker_execute($command, $return_output = FALSE, $capture_stderr = TRUE
   exec($command, $output, $status);
 
   // If that exit status is non-zero then log the occurance.
-  if ($status != 0) {
+  if ($status != 0 || worker_verbose()) {
     worker_log("The following command generated a non-zero exit status of $status:\n" .
       "$command\n" .
       ($output ? trim(implode("\n", $output)) : '<<no output>>'));
@@ -434,4 +435,20 @@ function worker_log($string) {
   // Write the log message with length of time since logging was started and
   // the message followed by a newline character.
   file_put_contents($log_file, sprintf("[%10s] %s\n", number_format(microtime(TRUE) - $start, 6), $string), FILE_APPEND);
+}
+
+/**
+ * Check if worker is in verbose mode.
+ *
+ * @param
+ *   (Optional) Verbose mode to use, this should only be set by worker init.
+ * @return
+ *   TRUE if in verbose mode, otherwise FALSE.
+ */
+function worker_verbose($verbose = NULL) {
+  static $_verbose;
+  if ($verbose) {
+    $_verbose = (bool) $verbose;
+  }
+  return $_verbose;
 }
