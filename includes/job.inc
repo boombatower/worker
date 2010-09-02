@@ -263,7 +263,7 @@ function worker_patch(array $properties) {
  */
 function worker_fetch($url, $directory, $suffix = '') {
   // Request the file at the given URL.
-  $response = drupal_http_request($url);
+  $response = drupal_http_request($url); // @TODO Possibly allow for none http protocols.
   if ($response->code != 200) {
     worker_log('Unable to fetch ' . $url . ' due to [' . $response->error . '].');
     return FALSE;
