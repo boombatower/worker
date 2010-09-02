@@ -23,7 +23,6 @@ function worker_perform(array $properties) {
   $result = array(
     'status' => 'failure',
     'result' => NULL,
-    'error' => NULL,
   );
 
   // Ensure that the job plugin can be loaded.
@@ -54,7 +53,7 @@ function worker_perform(array $properties) {
   // the error message after trimming off the time offset.
   if ($result['status'] == 'failure') {
     array_pop($log);
-    $result['error'] = substr(array_pop($log), 12);
+    $result['result'] = substr(array_pop($log), 12);
   }
   return $result;
 }
