@@ -232,6 +232,12 @@ function worker_patch(array $properties) {
       $local = worker_fetch($url, $directory, $delta++);
       $name = basename($url);
 
+      // If requested check for non-unix newline characters.
+      if ($properties['newline'] == 'unix' && strpos(file_get_contents($local), "\r") !== FALSE) {
+        worker_log('Non-unix new line character(s) found in ' . $name . '.');
+        return FALSE;
+      }
+
       // Ensure that path the patch is to be applied to is readable.
       worker_log('Apply ' . $name . ' to /' . $path . '.');
       if (!$vcs['apply']($local)) {
