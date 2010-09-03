@@ -243,7 +243,7 @@ function worker_patch(array $properties) {
         worker_log('Failed to apply patch ' . $name . '.');
         return FALSE;
       }
-      worker_log("Modified files:\n > " . implode("\n > ", $vcs['modified files']($local)));
+      worker_log_list('Modified files:', $vcs['modified files']($local));
     }
     else {
       worker_log('No repository corresponds to path /' . $path . ' for ' . basename($url) . '.');
@@ -318,6 +318,51 @@ function worker_patch_modified_files($patch) {
     }
   }
   return array_values($files);
+}
+
+/**
+ * Evaluate scope properties to generate a list of files.
+ *
+ * @param $properties
+ *   Associative array of properties containing keys: path, mask, and nomask.
+ * @return
+ *   List of files relative to the JOB_ROOT.
+ */
+function worker_file_list(array $properties) {
+  // Cycle through all paths, determine if path points to a file or directory
+  // and process accordingly.
+  $files = array();
+  foreach ($properties['path'] as $path) {
+    $name = basename($path);
+    $full_path = JOB_ROOT . '/' . $path;
+
+    // Ensure path exists.
+    if (!file_exists($full_path)) {
+      worker_log('Invalid path /' . $path . '.');
+      return FALSE;
+    }
+
+    // If path points to a directory then scan all the files within using the
+    // mask and no mask properties.
+    if (is_dir($full_path)) {
+      $scan = file_scan_directory($full_path, $properties['mask'], array('nomask' => $properties['nomask']));
+
+      // Cycle through resulting files and create an associative array of
+      // relative paths.
+      foreach ($scan as $uri => $info) {
+        $path = str_replace(JOB_ROOT . '/', '', $uri);
+        $files[$path] = $path;
+      }
+    }
+    else {
+      // Always add files reguardless of mask and nomask.
+      $files[$path] = $path;
+    }
+  }
+
+  // Sort files and return a list of relative paths.
+  ksort($files);
+  return array_keys($files);
 }
 
 /**
@@ -429,6 +474,18 @@ function worker_log($string) {
   // Write the log message with length of time since logging was started and
   // the message followed by a newline character.
   file_put_contents($log_file, sprintf("[%10s] %s\n", number_format(microtime(TRUE) - $start, 6), $string), FILE_APPEND);
+}
+
+/**
+ * Wrapper for worker_log() that formats a list of values.
+ *
+ * @param $string
+ *   Message string to log.
+ * @param $list
+ *   List of values to be printed in log.
+ */
+function worker_log_list($string, $list) {
+  worker_log($string . "\n > " . implode("\n > ", $list));
 }
 
 /**
