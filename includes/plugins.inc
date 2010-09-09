@@ -11,7 +11,9 @@
 /**
  * Fetch metadata on a specific plugin.
  *
- * @param $server
+ * @param $type
+ *   Plugin type.
+ * @param $plugin
  *   Name of plugin.
  * @return
  *   An array of information about the requested plugin.
@@ -62,7 +64,7 @@ function worker_ctools_plugin_server() {
  * Implements hook_ctools_plugin_directory().
  */
 function worker_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'worker' && ($plugin == 'worker' || $plugin == 'vcs')) {
+  if ($module == 'worker' && ($plugin == 'worker' || $plugin == 'vcs' || $plugin == 'database')) {
     return 'plugins/' . $plugin;
   }
 }
