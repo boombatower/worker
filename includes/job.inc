@@ -366,6 +366,65 @@ function worker_file_list(array $properties) {
 }
 
 /**
+ * Prepare a database and return the connection object.
+ *
+ * For each $prefix/$driver pair there should exist two database connections in
+ * the $databases array found in settings.php. The keys should follow the
+ * format: [PREFIX]_[DRIVER], [PREFIX]_[DRIVER]_stub. The stub connection
+ * should point to an existing database of the proper type that is empty while
+ * the primary should not point to an existing database, but the user should
+ * have permission to create and drop the database it points to.
+ *
+ * @param $prefix
+ *   The prefix used in the $databases array.
+ * @param $driver
+ *   The database driver which the connection should use.
+ * @return
+ *   A database connection object on success, otherwise FALSE.
+ */
+function worker_database($prefix, $driver) {
+  static $prepared = FALSE;
+
+  // Generate database key strings.
+  $name = $prefix . '_' . $driver;
+  $stub = $name . '_stub';
+
+  // If the database connection has already been prepared then simply return it.
+  if ($prepared) {
+    return Database::getConnection('default', $name);
+  }
+
+  // Attempt to prepare the database connection using the stub connection.
+  global $databases;
+  if ($connection = Database::getConnection('default', $stub)) {
+    // Attempt to load the worker database plugin for the specified driver.
+    if ($plugin = worker_plugins_get('database', $driver)) {
+      // Ensure the database connection information is available for the primary database.
+      if (!empty($databases[$name]['default']['database'])) {
+        // Attempt to drop/create the primary database using the stub
+        // connection with the appropriate driver.
+        $database = $databases[$name]['default']['database'];
+        if ($plugin['drop']($connection, $database) && $plugin['create']($connection, $database)) {
+          $prepared = TRUE;
+          return worker_database($prefix, $driver);
+        }
+        worker_log('Failed to prepare (drop/create) the primary database.');
+      }
+      else {
+        worker_log('Failed to find the primary database information.');
+      }
+    }
+    else {
+      worker_log('Failed to load database driver for ' . $driver . '.');
+    }
+  }
+  else {
+    worker_log('Failed to load stub database connection.');
+  }
+  return FALSE;
+}
+
+/**
  * Wrapper for PHP exec() function.
  *
  * All commands executed on the worker should be run through this command or
