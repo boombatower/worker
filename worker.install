@@ -1,0 +1,19 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the worker module.
+ *
+ * @author Jim Berry ("solotandem", http://drupal.org/user/240748)
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function worker_uninstall() {
+  worker_include('job');
+  // If directory exists then clear it out.
+  $directory = JOB_ROOT;
+  if (file_exists($directory)) {
+    worker_delete_recursive($directory);
+  }
+}

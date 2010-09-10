@@ -75,6 +75,7 @@ function worker_prepare(array $properties) {
 
   if (!worker_setup($properties)) {
     worker_log('Failed to complete execution of setup commands.');
+    return FALSE;
   }
 
   if (!worker_ssh($properties)) {
