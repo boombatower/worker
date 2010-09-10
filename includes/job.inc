@@ -425,6 +425,21 @@ function worker_database($prefix, $driver) {
 }
 
 /**
+ * Get the database information for the primary database.
+ *
+ * @param $prefix
+ *   The prefix used in the $databases array.
+ * @param $driver
+ *   The database driver which the connection should use.
+ * @return
+ *   Database information from $databases array in settings.php.
+ */
+function worker_database_info($prefix, $driver) {
+  global $databases;
+  return $databases[$prefix . '_' . $driver]['default'];
+}
+
+/**
  * Wrapper for PHP exec() function.
  *
  * All commands executed on the worker should be run through this command or
