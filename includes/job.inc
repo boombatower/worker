@@ -335,7 +335,7 @@ function worker_file_list(array $properties) {
   $files = array();
   foreach ($properties['path'] as $path) {
     $name = basename($path);
-    $full_path = JOB_ROOT . '/' . $path;
+    $full_path = rtrim(JOB_ROOT . '/' . $path, '/');
 
     // Ensure path exists.
     if (!file_exists($full_path)) {
