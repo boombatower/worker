@@ -367,6 +367,94 @@ function worker_file_list(array $properties) {
 }
 
 /**
+ * Check for syntax errors.
+ *
+ * @param $properties
+ *   Associative array of properties defining the job.
+ * @param $callback
+ *   (Optional) Function to call in order to check the syntax of a file. The
+ *   only parameter passed the function will be the file path relative to the
+ *   current working directory. The function is expected to return TRUE if the
+ *   file passed the syntax check, an array containing a message and line
+ *   number of the error (or FALSE), or FALSE if the syntax check failed to run
+ *   properly. The callback is defautly set to check PHP syntax.
+ * @return
+ *   Associative array of syntax errors keyed by path and containing 'messaage'
+ *   and 'context' (an array of lines), or FALSE if an error occured.
+ */
+function worker_syntax(array $properties, $callback = 'worker_syntax_php') {
+  worker_log('Assemble list of files to syntax check.');
+  if (!($files = worker_file_list($properties))) {
+    return FALSE;
+  }
+  worker_log('Syntax check ' . count($files) . ' file(s).');
+
+  worker_chdir();
+  $errors = array();
+  foreach ($files as $file) {
+    worker_log('> Check ' . $file . '.');
+    if ($error = $callback($file)) {
+      // Continue if the file passed the syntax check.
+      if ($error === TRUE) {
+        continue;
+      }
+
+      $errors[$file] = array(
+        'message' => $error['message'],
+        'context' => array(),
+      );
+
+      // If the line referenced by the message was determined then pull seven
+      // relevant lines from the file as context.
+      if ($error['line']) {
+        $lines = file($file);
+        $errors[$file]['context'] = array_slice($lines, $error['line'] - 4, 7, TRUE);
+      }
+    }
+    else {
+      worker_log('PHP syntax check did not respond properly.');
+      return FALSE;
+    }
+  }
+  chdir(DRUPAL_ROOT);
+
+  if (!empty($errors)) {
+    worker_log_list('PHP syntax errors found in the following file(s):', array_keys($errors));
+  }
+  return $errors;
+}
+
+/**
+ * Check the syntax of a PHP file.
+ *
+ * @param $file
+ *   Relative path to file.
+ * @return
+ *   See worker_syntax() for details on the return value
+ * @see worker_syntax()
+ */
+function worker_syntax_php($file) {
+  if ($output = worker_execute_output('php -l -f ' . escapeshellarg($file))) {
+    $output = $output[0];
+    if (strpos($output, 'No syntax errors detected') === FALSE) {
+      $error = array(
+        'message' => $output,
+        'line' => FALSE,
+      );
+
+      // If the messages follows the standard and the line number can be
+      // determined with a the regular expression then return it.
+      if (preg_match('/line (?P<line>\d+)$/m', $output, $match)) {
+        $error['line'] = $match['line'];
+      }
+      return $error;
+    }
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
  * Prepare a database and return the connection object.
  *
  * For each $prefix/$driver pair there should exist two database connections in
