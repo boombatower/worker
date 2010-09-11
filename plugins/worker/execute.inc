@@ -21,6 +21,6 @@ $plugin = array(
  *   Result of the command run.
  */
 function worker_execute_perform(array $properties) {
-  worker_log('Execute [' . $properties['execute.command'] . '].');
-  return worker_execute_output($properties['execute.command']);
+  worker_log('Execute ' . $properties['command'] . '.');
+  return worker_execute_output($properties['command']);
 }
