@@ -472,14 +472,14 @@ function worker_syntax_php($file) {
  *   A database connection object on success, otherwise FALSE.
  */
 function worker_database($prefix, $driver) {
-  static $prepared = FALSE;
+  static $prepared = array();
 
   // Generate database key strings.
   $name = $prefix . '_' . $driver;
   $stub = $name . '_stub';
 
   // If the database connection has already been prepared then simply return it.
-  if ($prepared) {
+  if (!empty($prepared[$name])) {
     return Database::getConnection('default', $name);
   }
 
@@ -494,7 +494,7 @@ function worker_database($prefix, $driver) {
         // connection with the appropriate driver.
         $database = $databases[$name]['default']['database'];
         if ($plugin['drop']($connection, $database) && $plugin['create']($connection, $database)) {
-          $prepared = TRUE;
+          $prepared[$name] = TRUE;
           return worker_database($prefix, $driver);
         }
         worker_log('Failed to prepare (drop/create) the primary database.');
