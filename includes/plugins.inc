@@ -33,9 +33,8 @@ function worker_plugins_get($type, $plugin) {
  * @see worker_plugins_get()
  */
 function worker_plugins_get_vcs($url) {
-  // Note that parse_url() does  not work since git urls for example are
-  // non-standard enough that it will not parse them at all. Possibly just use
-  // custom format?
+  // Note: parse_url() will not parse some non-standard urls (e.g., git).
+  // Possibly use a custom format?
   list($scheme) = explode('://', $url);
   return worker_plugins_get('vcs', $scheme);
 }

@@ -3,6 +3,7 @@ description = Worker for the conduit system.
 package = Conduit
 core = 7.x
 files[] = worker.module
+files[] = worker.test
 
 files[] = plugins/vcs/bzr.inc
 files[] = plugins/vcs/cvs.inc

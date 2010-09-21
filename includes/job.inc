@@ -15,7 +15,51 @@ define('JOB_ROOT', DRUPAL_ROOT . '/' . file_directory_path() . '/job');
  * Perform the given job.
  *
  * @param $properties
- *   Associative array of job properties.
+ *   Associative array of job properties applicable to the current job.
+ *   Supported keys and values are:
+ *   - database: The type of database to connect to. A valid plugin with the
+ *       same name should exist in the worker/plugins/database directory.
+ *   - version: The [Drupal] primary version number.
+ *   - plugin: The name of the plugin to load. A valid plugin with the
+ *       same name should exist in the worker/plugins/worker directory.
+ *   - verbose: A boolean indicating whether to return verbose debug information.
+ *       Debug information is [written to log|included in results returned by worker].
+ *   - command: The command string to execute. Only applies if plugin = 'execute'.
+ *
+ *     Scope parameters used to determine the list of files to perform a job with.
+ *   - path: Array of directory and file paths relative to the JOB_ROOT directory.
+ *       Enumerated files are always included regardless of the mask and nomask values.
+ *       Directories are recursed by default. [can this be changed except by listing files?]
+ *   - mask: The preg_match() regular expression of the files to find.
+ *   - nomask: The preg_match() regular expression of the files to ignore.
+ *       Defaults to '/(\.\.?|CVS)$/'.
+ *
+ *   - setup: Array of command strings to execute during the job setup phase.
+ *   - variables: Associative array of drupal variables to set.
+ *
+ *   - newline: The type of newline characters [in the files the job will be executed against].
+ *       Possible values are: 'unix', 'mac', 'windows', 'any'.
+ *
+ *     Code repository parameters.
+ *   - vcs: Associative array of code repository paths whose keys are directory
+ *       paths relative to the JOB_ROOT directory. A key of '' refers to the
+ *       JOB_ROOT directory.
+ *       [strings (matching the values in the patch array).]
+ *   - patch: Associative array of file paths whose keys are patch files to be
+ *       applied to the files in the path. The file path values must match a
+ *       file path key in the vcs property array.
+ *     [Why not have key=directory path and value=array of patch file URLs???]
+ *
+ *     Login properties for code repositories.
+ *   - ssh: Array of associative arrays containing ssh keys for connecting to a
+ *       code repository. The keys of each associative array are:
+ *       - key: Public key for validating with the host.
+ *       - host: The repository [URL|???].
+ *       - user: the user name [associated with the key|to login to the repository with].
+ *       - port: The IP port to connect to the repository server.
+ *
+ *   - item: Object added by conduit server containing row ids for current job.
+ *
  * @return
  *   The result of the job or FALSE.
  */
@@ -65,6 +109,8 @@ function worker_perform(array $properties) {
  *   Associative array of job properties.
  * @return
  *   TRUE if successfull, otherwise FALSE.
+ *
+ * @see worker_perform() for a description of the properties array.
  */
 function worker_prepare(array $properties) {
   // Ensure the job root directory is available.
@@ -116,6 +162,8 @@ function worker_directory_prepare($directory = JOB_ROOT) {
  *   Associative array of job properties.
  * @return
  *   TRUE if successfull, otherwise FALSE.
+ *
+ * @see worker_perform() for a description of the properties array.
  */
 function worker_setup(array $properties) {
   foreach ($properties['setup'] as $command) {
@@ -134,10 +182,12 @@ function worker_setup(array $properties) {
  *   Associative array of job properties.
  * @return
  *   TRUE if successfull, otherwise FALSE.
+ *
+ * @see worker_perform() for a description of the properties array.
  */
 function worker_ssh(array $properties) {
   // Determine the web user home directory.
-  if (($home = array_pop(worker_execute_output('eval echo ~$(whoami)'))) && is_dir($home)) {
+  if (($home = current(worker_execute_output('eval echo ~$(whoami)'))) && is_dir($home)) {
     // Clean out .ssh directory and recreate it.
     worker_directory_prepare($home . '/.ssh');
 
@@ -182,6 +232,8 @@ function worker_ssh(array $properties) {
  *   Associative array of job properties.
  * @return
  *   TRUE if successfull, otherwise FALSE.
+ *
+ * @see worker_perform() for a description of the properties array.
  */
 function worker_vcs(array $properties) {
   // Cycle through all repositories until complete or an error is encountered.
@@ -217,6 +269,8 @@ function worker_vcs(array $properties) {
  *   Associative array of job properties.
  * @return
  *   TRUE if successfull, otherwise FALSE.
+ *
+ * @see worker_perform() for a description of the properties array.
  */
 function worker_patch(array $properties) {
   // Prepare patch storage directory.
@@ -328,6 +382,8 @@ function worker_patch_modified_files($patch) {
  *   Associative array of properties containing keys: path, mask, and nomask.
  * @return
  *   List of files relative to the JOB_ROOT.
+ *
+ * @see worker_perform() for a description of the properties array.
  */
 function worker_file_list(array $properties) {
   // Cycle through all paths, determine if path points to a file or directory
@@ -356,7 +412,7 @@ function worker_file_list(array $properties) {
       }
     }
     else {
-      // Always add files reguardless of mask and nomask.
+      // Always add files regardless of mask and nomask.
       $files[$path] = $path;
     }
   }
@@ -381,6 +437,8 @@ function worker_file_list(array $properties) {
  * @return
  *   Associative array of syntax errors keyed by path and containing 'messaage'
  *   and 'context' (an array of lines), or FALSE if an error occured.
+ *
+ * @see worker_perform() for a description of the properties array.
  */
 function worker_syntax(array $properties, $callback = 'worker_syntax_php') {
   worker_log('Assemble list of files to syntax check.');
@@ -431,6 +489,7 @@ function worker_syntax(array $properties, $callback = 'worker_syntax_php') {
  *   Relative path to file.
  * @return
  *   See worker_syntax() for details on the return value
+ *
  * @see worker_syntax()
  */
 function worker_syntax_php($file) {
@@ -540,7 +599,7 @@ function worker_database_info($prefix, $driver) {
  * @param $return_output
  *   (Optional) Return the output of the command instead of TRUE or FALSE.
  * @param $capture_stderr
- *   Capture the stderr as part of the output.
+ *   (Optional) Capture the stderr as part of the output.
  * @return
  *   If successfull then TRUE or the output of the command, otherwise FALSE.
  */
@@ -553,9 +612,9 @@ function worker_execute($command, $return_output = FALSE, $capture_stderr = TRUE
   // Execute the command and capture the output and status.
   exec($command, $output, $status);
 
-  // If that exit status is non-zero then log the occurance.
+  // If the exit status is non-zero then log the occurrence.
   if ($status != 0 || worker_verbose()) {
-    worker_log("The following command generated a non-zero exit status of $status:\n" .
+    worker_log("The following command generated an exit status of $status:\n" .
       "$command\n" .
       ($output ? trim(implode("\n", $output)) : '<<no output>>'));
   }
