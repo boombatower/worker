@@ -646,6 +646,83 @@ function worker_execute_output($command, $capture_stderr = TRUE) {
 }
 
 /**
+ * Execute a task in the background so the function does not block.
+ *
+ * @param $command
+ *   Script to be placed in file and execute in the background. The script may
+ *   contain newlines and what not since it will first be dumped to a file.
+ * @return
+ *   The number of the process to use with worker_execute_background_done().
+ * @see worker_execute_background_done()
+ */
+function worker_execute_background($command) {
+  $number = &drupal_static(__FUNCTION__, 0);
+  $file = FILE_ROOT . '/process.' . ++$number;
+  file_put_contents($file, "$command\nrm $file");
+  shell_exec("nohup sh $file > /dev/null 2> /dev/null &");
+  return $number;
+}
+
+/**
+ * Determine if the background process has completed.
+ *
+ * @param $number
+ *   Process number.
+ * @return
+ *   TRUE if the process has completed, otherwise FALSE.
+ * @see worker_execute_background()
+ */
+function worker_execute_background_done($number) {
+  return !file_exists(FILE_ROOT . '/process.' . $number);
+}
+
+/**
+ * Execute a list of commands concurrently.
+ *
+ * @param $commands
+ *   List of commands to be executed, see worker_execute_background().
+ * @param $sleep
+ *   (Optional) Time in micro seconds to sleep between checking the state of
+ *   processes. For tasks with longer execution times you can set the sleep
+ *   higher. The default is one second.
+ * @param $concurrency
+ *   (Optional) Number of concurrent processes to keep running at the same
+ *   time. The default is two, but can be overridden using
+ *   $conf['worker_concurrency'] in settings.php.
+ * @see worker_execute_background()
+ */
+function worker_execute_concurrent(array $commands, $sleep = 1000000, $concurrency = NULL) {
+  if (!$concurrency) {
+    global $conf;
+    $concurrency = !empty($conf['worker_concurrency']) ? $conf['worker_concurrency'] : 2;
+  }
+
+  // Continue looping until all commands have been executed and all the
+  // processes have completed.
+  $processes = array();
+  while ($commands || $processes) {
+    // Prune list of active processes.
+    foreach ($processes as $key => $process) {
+      list($process, $start) = $process;
+      if (worker_execute_background_done($process)) {
+        unset($processes[$key]);
+        worker_log('> Finished ' . $key . ' in ' . number_format(microtime(TRUE) - $start, 2) . '.');
+      }
+    }
+
+    // Ensure that the maximum number of processes are running.
+    while ($commands && count($processes) < $concurrency) {
+      list($key, $command) = each($commands);
+      $process = worker_execute_background($command);
+      $processes[$key] = array($process, microtime(TRUE));
+      unset($commands[$key]);
+    }
+
+    usleep($sleep);
+  }
+}
+
+/**
  * Wrapper for PHP chdir() function, that starts from JOB_ROOT.
  *
  * @param $directory
