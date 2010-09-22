@@ -7,9 +7,18 @@
  */
 
 /**
+ */
+define('FILE_ROOT', DRUPAL_ROOT . '/' . file_directory_path());
+
+/**
  * Root directory for job.
  */
-define('JOB_ROOT', DRUPAL_ROOT . '/' . file_directory_path() . '/job');
+define('JOB_ROOT', FILE_ROOT . '/job');
+
+/**
+ * Absolute URL to the job directory.
+ */
+define('JOB_URL', url('', array('absolute' => TRUE)) . 'job');
 
 /**
  * Perform the given job.
@@ -85,13 +94,13 @@ function worker_perform(array $properties) {
     }
 
     chdir(DRUPAL_ROOT);
-    worker_log('Job exiting.');
+    worker_log('Exit job.');
   }
 
   // Load log file contents as an array so the second to last line can be
   // accessed if necessary.
   $log = file(file_directory_path() . '/job.log');
-  $result['log'] = implode("\n", $log);
+  $result['log'] = implode('', $log);
 
   // If the job was a failure then use the second to last line from the log as
   // the error message after trimming off the time offset.
