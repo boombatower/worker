@@ -73,16 +73,21 @@ define('JOB_URL', url('', array('absolute' => TRUE)) . 'job');
  *   The result of the job or FALSE.
  */
 function worker_perform(array $properties) {
+  // Initialize result so that the defualt status returned is failure unless
+  // the plugin was found, the worker successfully prepared, and the plugin
+  // executed with a success return value.
   $result = array(
     'status' => 'failure',
     'result' => NULL,
   );
 
+  // Initialize log and set vebose reporting mode.
+  $data = $properties['item']->data;
+  worker_log('Start job ' . $data['nid'] . '.' . $data['vid'] . '.' . $data['delta'] . '.');
+  worker_verbose($properties['verbose']);
+
   // Ensure that the job plugin can be loaded.
   if ($plugin = worker_plugins_get('worker', $properties['plugin'])) {
-    worker_log('Starting job ' . $properties['item']->data['nid'] . '.' . $properties['item']->data['vid'] . '.' . $properties['item']->data['delta'] . '.');
-    worker_verbose($properties['verbose']);
-
     // Perform preparation and then job.
     if (worker_prepare($properties)) {
       // Ensure the working directory is set to the DRUPAL_ROOT and invoke the
@@ -93,9 +98,14 @@ function worker_perform(array $properties) {
       }
     }
 
+    // In case worker_prepare() or $plugin->perform() fail ensure the working
+    // directory is reset so Drupal functions properly.
     chdir(DRUPAL_ROOT);
-    worker_log('Exit job.');
   }
+  else {
+    worker_log('Invalid plugin ' . $properties['plugin'] . '.');
+  }
+  worker_log('Exit job.');
 
   // Load log file contents as an array so the second to last line can be
   // accessed if necessary.
