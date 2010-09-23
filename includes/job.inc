@@ -73,7 +73,7 @@ define('JOB_URL', url('', array('absolute' => TRUE)) . 'job');
  *   The result of the job or FALSE.
  */
 function worker_perform(array $properties) {
-  // Initialize result so that the defualt status returned is failure unless
+  // Initialize result so that the default status returned is failure unless
   // the plugin was found, the worker successfully prepared, and the plugin
   // executed with a success return value.
   $result = array(
@@ -98,7 +98,7 @@ function worker_perform(array $properties) {
       }
     }
 
-    // In case worker_prepare() or $plugin->perform() fail ensure the working
+    // In case worker_prepare() or $plugin['perform']() fail ensure the working
     // directory is reset so Drupal functions properly.
     chdir(DRUPAL_ROOT);
   }
@@ -230,7 +230,7 @@ function worker_ssh(array $properties) {
       file_put_contents($home . '/.ssh/config', $config, FILE_APPEND);
 
       // Add the host to the known_hosts file.
-      $line = array_shift(worker_execute_output('ssh -o StrictHostKeyChecking=no ' . escapeshellarg($info['host']) . ' exit'));
+      $line = current(worker_execute_output('ssh -o StrictHostKeyChecking=no ' . escapeshellarg($info['host']) . ' exit'));
       if (preg_match('/Warning: Permanently added .*? to the list of known hosts./', $line)) {
         // Coninue with next ssh key.
         continue;
@@ -610,8 +610,8 @@ function worker_database_info($prefix, $driver) {
  * Wrapper for PHP exec() function.
  *
  * All commands executed on the worker should be run through this command or
- * worker_execute_output(). If the exit status is non-zero the occurance will
- * be logged.
+ * worker_execute_output(). If the exit status is non-zero or verbose mode is
+ * enabled, then the exit status will be logged.
  *
  * @param $command
  *   Command to execute.
@@ -631,8 +631,8 @@ function worker_execute($command, $return_output = FALSE, $capture_stderr = TRUE
   // Execute the command and capture the output and status.
   exec($command, $output, $status);
 
-  // If the exit status is non-zero then log the occurrence.
   if ($status != 0 || worker_verbose()) {
+    // Log the exit status.
     worker_log("The following command generated an exit status of $status:\n" .
       "$command\n" .
       ($output ? trim(implode("\n", $output)) : '<<no output>>'));
@@ -641,7 +641,7 @@ function worker_execute($command, $return_output = FALSE, $capture_stderr = TRUE
 }
 
 /**
- * Wrapper for PHP exec() function that return the output.
+ * Wrapper for PHP exec() function that returns the output.
  *
  * @param $command
  *   Command to execute.
@@ -656,18 +656,21 @@ function worker_execute_output($command, $capture_stderr = TRUE) {
 }
 
 /**
- * Execute a task in the background so the function does not block.
+ * Execute a task in the background so the calling function does not block.
  *
  * @param $command
- *   Script to be placed in file and execute in the background. The script may
- *   contain newlines and what not since it will first be dumped to a file.
+ *   Script to be placed in file and executed in the background. The script may
+ *   span multiple lines since it will be written to a file.
  * @return
- *   The number of the process to use with worker_execute_background_done().
+ *   The process number to use with worker_execute_background_done().
  * @see worker_execute_background_done()
+ * @see worker_execute_concurrent()
  */
 function worker_execute_background($command) {
   $number = &drupal_static(__FUNCTION__, 0);
   $file = FILE_ROOT . '/process.' . ++$number;
+  // Add command to delete the script file after $command finishes so we can
+  // test the file's existence in worker_execute_background_done().
   file_put_contents($file, "$command\nrm $file");
   shell_exec("nohup sh $file > /dev/null 2> /dev/null &");
   return $number;
@@ -681,6 +684,7 @@ function worker_execute_background($command) {
  * @return
  *   TRUE if the process has completed, otherwise FALSE.
  * @see worker_execute_background()
+ * @see worker_execute_concurrent()
  */
 function worker_execute_background_done($number) {
   return !file_exists(FILE_ROOT . '/process.' . $number);
@@ -700,6 +704,7 @@ function worker_execute_background_done($number) {
  *   time. The default is two, but can be overridden using
  *   $conf['worker_concurrency'] in settings.php.
  * @see worker_execute_background()
+ * @see worker_execute_background_done()
  */
 function worker_execute_concurrent(array $commands, $sleep = 1000000, $concurrency = NULL) {
   if (!$concurrency) {
@@ -707,8 +712,7 @@ function worker_execute_concurrent(array $commands, $sleep = 1000000, $concurren
     $concurrency = !empty($conf['worker_concurrency']) ? $conf['worker_concurrency'] : 2;
   }
 
-  // Continue looping until all commands have been executed and all the
-  // processes have completed.
+  // Loop until all commands have executed and all processes have completed.
   $processes = array();
   while ($commands || $processes) {
     // Prune list of active processes.
