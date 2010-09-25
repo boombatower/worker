@@ -703,6 +703,9 @@ function worker_execute_background_done($number) {
  *   (Optional) Number of concurrent processes to keep running at the same
  *   time. The default is two, but can be overridden using
  *   $conf['worker_concurrency'] in settings.php.
+ * @return
+ *   Associative array keyed by the keys found in $commands and containing the
+ *   length of time, in seconds, that the task took to complete.
  * @see worker_execute_background()
  * @see worker_execute_background_done()
  */
@@ -714,13 +717,15 @@ function worker_execute_concurrent(array $commands, $sleep = 1000000, $concurren
 
   // Loop until all commands have executed and all processes have completed.
   $processes = array();
+  $log = array();
   while ($commands || $processes) {
     // Prune list of active processes.
     foreach ($processes as $key => $process) {
       list($process, $start) = $process;
       if (worker_execute_background_done($process)) {
         unset($processes[$key]);
-        worker_log('> Finished ' . $key . ' in ' . number_format(microtime(TRUE) - $start, 2) . '.');
+        $log[$key] = microtime(TRUE) - $start;
+        worker_log('> Finished ' . $key . ' in ' . number_format($log[$key], 2) . '.');
       }
     }
 
@@ -734,6 +739,7 @@ function worker_execute_concurrent(array $commands, $sleep = 1000000, $concurren
 
     usleep($sleep);
   }
+  return $log;
 }
 
 /**
