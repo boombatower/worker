@@ -83,7 +83,7 @@ function worker_perform(array $properties) {
 
   // Initialize log and set vebose reporting mode.
   $data = $properties['item']->data;
-  worker_log('Start job ' . $data['nid'] . '.' . $data['vid'] . '.' . $data['delta'] . '.');
+  worker_log('Start job ' . number_format($data['nid']) . '.' . number_format($data['vid']) . '.' . number_format($data['delta']) . '.');
   worker_verbose($properties['verbose']);
 
   // Ensure that the job plugin can be loaded.
@@ -464,7 +464,7 @@ function worker_syntax(array $properties, $callback = 'worker_syntax_php') {
   if (!($files = worker_file_list($properties))) {
     return FALSE;
   }
-  worker_log('Syntax check ' . count($files) . ' file(s).');
+  worker_log('Syntax check ' . number_format(count($files)) . ' file(s).');
 
   worker_chdir();
   $errors = array();
