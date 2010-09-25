@@ -467,6 +467,7 @@ function worker_syntax(array $properties, $callback = 'worker_syntax_php') {
   worker_log('Syntax check ' . number_format(count($files)) . ' file(s).');
 
   worker_chdir();
+  $length = $properties['context'] * 2 + 1;
   $errors = array();
   foreach ($files as $file) {
     worker_log('> Check ' . $file . '.');
@@ -481,11 +482,11 @@ function worker_syntax(array $properties, $callback = 'worker_syntax_php') {
         'context' => array(),
       );
 
-      // If the line referenced by the message was determined then pull seven
+      // If the line referenced by the message was determined then pull the
       // relevant lines from the file as context.
       if ($error['line']) {
         $lines = file($file);
-        $errors[$file]['context'] = array_slice($lines, $error['line'] - 4, 7, TRUE);
+        $errors[$file]['context'] = array_slice($lines, $error['line'] - $properties['context'] - 1, $length, TRUE);
       }
     }
     else {
