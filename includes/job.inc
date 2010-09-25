@@ -611,7 +611,7 @@ function worker_database_info($prefix, $driver) {
  *
  * All commands executed on the worker should be run through this command or
  * worker_execute_output(). If the exit status is non-zero or verbose mode is
- * enabled, then the exit status will be logged.
+ * enabled, then the exit status and output will be logged.
  *
  * @param $command
  *   Command to execute.
