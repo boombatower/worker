@@ -55,6 +55,23 @@ function worker_drush_init() {
  * Perform worker cron tasks.
  *
  * If the worker is not busy then request a new job and spawn a worker and monitor process if a job is available.
+ *
+ * Overview of the cron process:
+ *
+ * cron process
+ * - check if worker is busy
+ * - request job
+ * - start monitor process
+ *
+ * monitor process (-1)
+ * - start worker process
+ * - monitor worker until complete
+ *   - upload job.log diff's every 10 seconds
+ * - check for fatal errors upon process termination and report them
+ *
+ * worker process (-2)
+ * - peform job
+ * - report result to conduit server
  */
 function drush_worker_cron() {
   // If no 'monitor' process is running then continue.
