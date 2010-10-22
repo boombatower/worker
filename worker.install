@@ -4,6 +4,7 @@
  * Install, update and uninstall functions for the worker module.
  *
  * @author Jim Berry ("solotandem", http://drupal.org/user/240748)
+ * @author Jimmy Berry ("boombatower", http://drupal.org/user/214218)
  */
 
 /**
@@ -11,9 +12,11 @@
  */
 function worker_uninstall() {
   worker_include('job');
-  // If directory exists then clear it out.
-  $directory = JOB_ROOT;
-  if (file_exists($directory)) {
-    worker_delete_recursive($directory);
+
+  // Clear out all directories and files that may have been created.
+  foreach (array('job', 'patch', 'error.log', 'job.log', 'job.php') as $file) {
+    if (file_exists($file)) {
+      worker_delete_recursive($file);
+    }
   }
 }
