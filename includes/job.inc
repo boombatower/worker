@@ -832,3 +832,24 @@ function worker_verbose($verbose = NULL) {
   }
   return $_verbose;
 }
+
+/**
+ * Returns the local public directory path.
+ *
+ * Adapted from function removed from core on 2010-09-01
+ * (see http://drupal.org/cvs?commit=415020).
+ *
+ * @return string
+ *   A string containing the directory path of a stream. FALSE is returned if
+ *   the scheme is invalid or a wrapper could not be instantiated.
+ */
+if (!function_exists('file_directory_path')) {
+  function file_directory_path($scheme = 'public') {
+    if ($wrapper = file_stream_wrapper_get_instance_by_scheme($scheme)) {
+      return $wrapper->getDirectoryPath();
+    }
+    else {
+      return FALSE;
+    }
+  }
+}
