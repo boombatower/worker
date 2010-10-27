@@ -608,6 +608,21 @@ function worker_database_info($prefix, $driver) {
 }
 
 /**
+ * Determine the location of the PHP executable from the whereis command.
+ *
+ * @return
+ *   Absolute path to the PHP executable.
+ */
+function worker_php_path() {
+  // Determine the location of the PHP executable from whereis command output.
+  if (!(($php = current(worker_execute_output('whereis php'))) && ($php = explode(' ', $php)) && !empty($php[1]))) {
+    worker_log('Could not determine the location of the PHP executable.');
+    return FALSE;
+  }
+  return $php[1];
+}
+
+/**
  * Wrapper for PHP exec() function.
  *
  * All commands executed on the worker should be run through this command or
