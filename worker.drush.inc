@@ -31,6 +31,13 @@ function worker_drush_command() {
     ),
     'aliases' => array('wp'),
   );
+  $items['worker-requirements'] = array(
+    'description' => 'Check the status of the worker requirements.',
+    'aliases' => array('wr'),
+    'options' => array(
+      '--summary' => 'Indead of the standard output print only passed or failed.',
+    ),
+  );
   $items['worker-status'] = array(
     'description' => 'Print the status of the worker, either "busy" or "idle".',
     'aliases' => array('ws'),
@@ -160,6 +167,41 @@ function drush_worker_perform($file) {
   else {
     drush_print_r($properties);
     drush_print_r($result);
+  }
+}
+
+/**
+ * Check the status of the worker requirements.
+ */
+function drush_worker_requirements() {
+  worker_include('job');
+
+  // Basic requirements.
+  $requirements = array(
+    'PHP executable path found (%s).' => worker_php_path(),
+    'Drush is configured properly.' => TRUE,
+  );
+
+  // Check database setup.
+  global $databases;
+  foreach (array_keys($databases) as $database) {
+    if (preg_match('/^(?P<key>(?P<base>.*)_(?P<driver>.*))_stub$/m', $database, $match) && isset($database[$match['key']])) {
+      $requirements["Database pair found for [{$match['base']}] with driver [{$match['driver']}]."] = TRUE;
+    }
+  }
+
+  // Iterate over requirements to determine overall status and output messages.
+  $pass = TRUE;
+  foreach ($requirements as $message => $value) {
+    $pass = $pass && $value;
+    if (!drush_get_option('summary')) {
+      drush_log(sprintf($message, $value), $value ? 'success' : 'error');
+    }
+  }
+
+  // If only the summary was requested the output passed or failed.
+  if (drush_get_option('summary')) {
+    drush_print($pass ? 'passed' : 'failed');
   }
 }
 
