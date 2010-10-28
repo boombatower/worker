@@ -1,9 +1,11 @@
 name = Worker
-description = Worker for the conduit system.
-package = Conduit
+description = Worker implementation for Conduit.
+package = Worker
 core = 7.x
 files[] = worker.module
 files[] = worker.test
+
+files[] = plugins/database/mysql.inc
 
 files[] = plugins/vcs/bzr.inc
 files[] = plugins/vcs/cvs.inc
