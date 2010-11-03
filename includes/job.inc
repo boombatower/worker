@@ -23,6 +23,13 @@ define('JOB_URL', url('', array('absolute' => TRUE)) . 'job');
 /**
  * Perform the given job.
  *
+ * Inital cleanup from last job run -- delete job dir, prepare new directory
+ * Setup commands -- bzr launchpad is more like a config command, it does not login
+ * Code checkout, patch apply
+ *
+ * for svn, checkout from subclipse
+ * check log for all array keys, content will vary
+ *
  * @param $properties
  *   Associative array of job properties applicable to the current job.
  *   Supported keys and values are:
@@ -302,7 +309,10 @@ function worker_patch(array $properties) {
       // Use the path specified as the root the patch is to be applied to. Use
       // a delta to ensure patch file names do not conflict.
       worker_chdir($path);
-      $local = worker_fetch($url, $directory, $delta++);
+      if (!($local = worker_fetch($url, $directory, $delta++))) {
+        worker_log('Failed to fetch patch file from ' . $url);
+        return FALSE;
+      }
       $name = basename($url);
 
       // If requested check for non-unix newline characters.
@@ -342,7 +352,7 @@ function worker_patch(array $properties) {
  */
 function worker_fetch($url, $directory, $suffix = '') {
   // Request the file at the given URL.
-  $response = drupal_http_request($url); // @TODO Possibly allow for none http protocols.
+  $response = drupal_http_request($url); // @TODO Possibly allow for non-http protocols.
   if ($response->code != 200) {
     worker_log('Unable to fetch ' . $url . ' due to [' . $response->error . '].');
     return FALSE;
