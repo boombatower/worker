@@ -123,7 +123,7 @@ function worker_perform(array $properties) {
   // the error message after trimming off the time offset.
   if ($result['status'] == 'failure') {
     array_pop($log);
-    $result['result'] = substr(array_pop($log), 12);
+    $result['result'] = substr(array_pop($log), 13);
   }
   return $result;
 }
