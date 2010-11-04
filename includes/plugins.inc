@@ -51,11 +51,13 @@ function worker_plugins_get_all($type) {
 }
 
 /**
- * Implements hook_ctools_plugin_TYPE().
+ * Implements hook_ctools_plugin_type().
  */
-function worker_ctools_plugin_server() {
+function worker_ctools_plugin_type() {
   return array(
-    'cache' => TRUE,
+    'database' => array('cache' => TRUE),
+    'vcs' => array('cache' => TRUE),
+    'worker' => array('cache' => TRUE),
   );
 }
 
@@ -63,7 +65,7 @@ function worker_ctools_plugin_server() {
  * Implements hook_ctools_plugin_directory().
  */
 function worker_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'worker' && ($plugin == 'worker' || $plugin == 'vcs' || $plugin == 'database')) {
+  if ($module == 'worker' && ($plugin == 'database' || $plugin == 'vcs' || $plugin == 'worker')) {
     return 'plugins/' . $plugin;
   }
 }
