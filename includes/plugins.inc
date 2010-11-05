@@ -55,9 +55,9 @@ function worker_plugins_get_all($type) {
  */
 function worker_ctools_plugin_type() {
   return array(
-    'database' => array('cache' => TRUE),
-    'vcs' => array('cache' => TRUE),
-    'worker' => array('cache' => TRUE),
+    'database' => array(),
+    'vcs' => array(),
+    'worker' => array(),
   );
 }
 
