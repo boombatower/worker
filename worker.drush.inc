@@ -51,7 +51,7 @@ function worker_drush_command() {
  */
 function worker_drush_init() {
   // When not displaying help information define constants.
-  if (!func_get_args()) {
+  if (!func_get_args() && module_exists('worker')) {
     define('DRUSH_WORKER_JOB', file_directory_path() . '/job.php');
     define('DRUSH_WORKER_ERROR', file_directory_path() . '/error.log');
     define('DRUSH_WORKER_MONITOR', 10);
@@ -83,15 +83,10 @@ function worker_drush_init() {
 function drush_worker_cron() {
   // If no 'monitor' process is running then continue.
   if (!drush_worker_status_busy()) {
-    // @TODO Request job.
-
     // If a job is available then store the properties array in a file, launch
     // the perform and monitor processes.
-    if (TRUE) { // @TODO Fill in once request job code available.
-      // @TODO Temporarily read out of conduit_drupal/job.php.
-      global $properties;
-      require drupal_get_path('module', 'conduit_drupal') . '/job.php';
-
+    worker_include('rest');
+    if ($properties = worker_rest_claim()) {
       // Store the job information in file.
       file_put_contents(DRUSH_WORKER_JOB, '<?php $properties = ' . var_export($properties, TRUE) . ';');
 
@@ -107,8 +102,10 @@ function drush_worker_cron() {
  * Start and monitor the worker process.
  */
 function drush_worker_monitor() {
-  // Start the worker process (-2).
   worker_include('job');
+  worker_include('rest');
+
+  // Start the worker process (-2).
   drupal_static('worker_execute_background', -3);
   $number = worker_execute_background('drush worker-perform --report --summary ' . DRUSH_WORKER_JOB . ' 2> ' . DRUSH_WORKER_ERROR);
 
@@ -121,7 +118,8 @@ function drush_worker_monitor() {
 
   // If the worker crashed due to a fatal error report the error.
   if ($error = trim(file_get_contents(DRUSH_WORKER_ERROR))) {
-    // @TODO Report error.
+    $properties = drush_worker_perform_load(DRUSH_WORKER_JOB);
+    worker_rest_result($properties['item'], FALSE, FALSE, $error);
   }
 }
 
@@ -139,30 +137,20 @@ function drush_worker_perform_validate($file = '') {
  */
 function drush_worker_perform($file) {
   // Load the file and access the $properties array.
-  global $properties;
-  require $file;
-
-  // To properly simulate  job request add an 'item' to be associated with.
-  if (!isset($properties['item'])) {
-    $properties['item'] = new stdClass();
-    $properties['item']->item_id = 17;
-    $properties['item']->data = array(
-      'nid' => 18,
-      'vid' => 19,
-      'delta' => 20,
-    );
-  }
+  $properties = drush_worker_perform_load($file);
 
   // Perform job.
   worker_include('job');
   $result = worker_perform($properties);
 
   if (drush_get_option('report')) {
-    // @TODO Report the result to the conduit server.
+    // Report the result to the conduit server.
+    worker_include('rest');
+    worker_rest_result($properties['item'], $result && $result['status'] == 'success', $result['result'], $result['log']);
   }
 
   if (drush_get_option('summary')) {
-    drush_print($result ? 'done' : 'failed');
+    drush_print($result['status']);
   }
   else {
     drush_print_r($properties);
@@ -171,15 +159,35 @@ function drush_worker_perform($file) {
 }
 
 /**
+ * Load a properties file.
+ *
+ * @param $file
+ *   Path to properties file.
+ * @return
+ *   Array of properties.
+ */
+function drush_worker_perform_load($file) {
+  global $properties;
+  require $file;
+  $properties['item'] = (object) $properties['item'];
+  return $properties;
+}
+
+/**
  * Check the status of the worker requirements.
  */
 function drush_worker_requirements() {
   worker_include('job');
+  worker_include('rest');
 
   // Basic requirements.
   $requirements = array(
     'PHP executable path found (%s).' => worker_php_path(),
     'Drush is configured properly.' => TRUE,
+    'Variable worker_url found.' => variable_get('worker_url'),
+    'Variable worker_login found.' => variable_get('worker_login'),
+    'Variable worker_category found.' => variable_get('worker_category'),
+    'Successfully authenticated with conduit server.' => worker_rest_login(),
   );
 
   // Check database setup.
