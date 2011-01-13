@@ -53,8 +53,8 @@ function worker_drush_init() {
   // When not displaying help information define constants.
   if (!func_get_args() && module_exists('worker')) {
     define('DRUSH_WORKER_CONF_PATH', realpath(conf_path()));
-    define('DRUSH_WORKER_JOB', realpath(file_directory_path() . '/job.php'));
-    define('DRUSH_WORKER_ERROR', realpath(file_directory_path() . '/error.log'));
+    define('DRUSH_WORKER_JOB', realpath(file_directory_path()) . '/job.php');
+    define('DRUSH_WORKER_ERROR', realpath(file_directory_path()) . '/error.log');
     define('DRUSH_WORKER_MONITOR', 10);
   }
 }
