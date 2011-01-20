@@ -73,6 +73,8 @@ class WorkerPropertyTestCase extends WorkerTestCase {
     // can not be done in the setUp() method. The same code as in DWTC can be
     // used, although it needs to be done earlier in the DUTC method.
 
+    drupal_load('module', 'conduit');
+    drupal_load('module', 'worker');
     parent::setUp('conduit', 'worker');
   }
 
@@ -83,12 +85,13 @@ class WorkerPropertyTestCase extends WorkerTestCase {
     $this->checkVersion($properties);
     $this->checkPlugin($properties);
     $this->checkVerbose($properties);
+    $this->checkCommand($properties);
     $this->checkScope($properties);
     $this->checkSetup($properties);
     $this->checkVariables($properties);
-    $this->checkPatch($properties);
     $this->checkSSH($properties);
     $this->checkVCS($properties);
+    $this->checkPatch($properties);
 //     $this->check($properties);
 //     $this->check($properties);
 //     $this->check($properties);
@@ -97,7 +100,7 @@ class WorkerPropertyTestCase extends WorkerTestCase {
 
   protected function getProperties() {
     // Set the sample patch url.
-    $patch_url = url('', array('absolute' => TRUE)) . drupal_get_path('module', 'conduit') . '/worker/tests/test-readme.patch';
+    $patch_url = url('', array('absolute' => TRUE)) . drupal_get_path('module', 'worker') . '/tests/test-readme.patch';
     sdp($patch_url, '$patch_url');
 
     // Create the conduit server tracking item.
@@ -115,8 +118,8 @@ class WorkerPropertyTestCase extends WorkerTestCase {
       'verbose' => FALSE,
       'database' => 'mysql',
       'version' => 7,
-      'plugin' => 'scan',
-  //     'command' => 'echo "hello world2"',
+      'plugin' => 'execute', // 'scan',
+      'command' => 'echo "hello world 2day"',
 
       'path' => array(
   //       'modules',
@@ -162,6 +165,7 @@ class WorkerPropertyTestCase extends WorkerTestCase {
       ),
 
       'item' => $item,
+      'context' => 3,
     );
 
     return $properties;
@@ -181,25 +185,26 @@ class WorkerPropertyTestCase extends WorkerTestCase {
     $this->assertNotNull($plugin, 'Plugin is not NULL');
     if ($plugin = worker_plugins_get('worker', $properties['plugin'])) {
       sdp($plugin, '$plugin');
-      $this->assertEqual($plugin['title'], 'Drupal scan', 'Plugin title is "Drupal scan."');
+      // @todo Move this assertion to worker_drupal test.
+//       $this->assertEqual($plugin['title'], 'Drupal scan', 'Plugin title is "Drupal scan."');
+      $this->assertEqual($plugin['title'], 'Execute', 'Plugin title is "Execute."');
     }
   }
 
-  protected function checkVerbose(array $properties) {
+  protected function checkVerbose(array $properties) {}
+
+  protected function checkCommand(array $properties) {
 //     $properties['verbose'] = TRUE;
     $results = worker_perform($properties);
+    $this->assertEqual('success', $results['status'], 'Command execution status is "success."');
+    $this->assertEqual(substr($properties['command'], 6, -1), $results['result'][0], 'Command result is "' . substr($properties['command'], 6, -1) . '."');
     sdp($results, '$results');
+    sdp(substr($properties['command'], 7, -1), 'command');
   }
 
   protected function checkScope(array $properties) {}
   protected function checkSetup(array $properties) {}
   protected function checkVariables(array $properties) {}
-
-  protected function checkPatch(array $properties) {
-    $readme = file_get_contents(JOB_ROOT . '/conduit/README');
-    sdp($readme, '$readme');
-    $this->assertEqual($readme, "sample text that has been modified\n", 'Patch was applied to README in conduit directory.');
-  }
 
   protected function checkSSH(array $properties) {}
 
@@ -220,6 +225,12 @@ class WorkerPropertyTestCase extends WorkerTestCase {
       sdp($module, '$module');
       $this->assertTrue(file_exists(JOB_ROOT . '/' . $path . '/' . $module), "Module file '$module' exists in directory.");
     }
+  }
+
+  protected function checkPatch(array $properties) {
+    $readme = file_get_contents(JOB_ROOT . '/test/README');
+    sdp($readme, '$readme');
+    $this->assertEqual($readme, "sample text that has been modified\n", 'Patch was applied to README in conduit directory.');
   }
 
 //     protected function check(array $properties) {}
