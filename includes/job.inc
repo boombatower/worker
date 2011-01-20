@@ -75,6 +75,8 @@ define('JOB_URL', url('', array('absolute' => TRUE)) . 'job');
  *       - port: The IP port to connect to the repository server.
  *
  *   - item: Object added by conduit server containing row ids for current job.
+ *   - context: Integer indicating the number of items (assertions|lines)
+ *       surrounding an error (failed assertion|parse error) to return.
  *
  * @return
  *   The result of the job or FALSE.
@@ -462,7 +464,7 @@ function worker_file_list(array $properties) {
  *   current working directory. The function is expected to return TRUE if the
  *   file passed the syntax check, an array containing a message and line
  *   number of the error (or FALSE), or FALSE if the syntax check failed to run
- *   properly. The callback is defautly set to check PHP syntax.
+ *   properly. The default callback checks PHP syntax.
  * @return
  *   Associative array of syntax errors keyed by path and containing 'messaage'
  *   and 'context' (an array of lines), or FALSE if an error occured.
