@@ -33,9 +33,6 @@ define('JOB_URL', url('', array('absolute' => TRUE)) . 'job');
  * @param $properties
  *   Associative array of job properties applicable to the current job.
  *   Supported keys and values are:
- *   - database: The type of database to connect to. A valid plugin with the
- *       same name should exist in the worker/plugins/database directory.
- *   - version: The [Drupal] primary version number.
  *   - plugin: The name of the plugin to load. A valid plugin with the
  *       same name should exist in the worker/plugins/worker directory.
  *   - verbose: A boolean indicating whether to return verbose debug information.
@@ -51,7 +48,6 @@ define('JOB_URL', url('', array('absolute' => TRUE)) . 'job');
  *       Defaults to '/(\.\.?|CVS)$/'.
  *
  *   - setup: Array of command strings to execute during the job setup phase.
- *   - variables: Associative array of drupal variables to set.
  *
  *   - newline: The type of newline characters [in the files the job will be executed against].
  *       Possible values are: 'unix', 'mac', 'windows', 'any'.

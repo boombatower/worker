@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Provide tests of conduit worker functionality.
+ * Provide tests of worker functionality.
  *
  * @author Jim Berry ("solotandem", http://drupal.org/user/240748)
  */
@@ -78,30 +78,37 @@ class WorkerPropertyTestCase extends WorkerTestCase {
     parent::setUp('conduit', 'worker');
   }
 
-  protected function testNodeTypes() {
+  protected function testProperty() {
     worker_include('job');
+
+    // These job properties include all the keys documented in worker_perform().
+    // The only plugin supported is "command" execution.
+    // The last patch applied includes syntax errors.
     $properties = $this->getProperties();
-    $this->checkDatabase($properties);
-    $this->checkVersion($properties);
     $this->checkPlugin($properties);
-    $this->checkVerbose($properties);
     $this->checkCommand($properties);
     $this->checkScope($properties);
     $this->checkSetup($properties);
-    $this->checkVariables($properties);
     $this->checkSSH($properties);
     $this->checkVCS($properties);
     $this->checkPatch($properties);
-//     $this->check($properties);
-//     $this->check($properties);
-//     $this->check($properties);
-//     $this->check($properties);
+    $this->checkLog($properties);
+
+    // Use the same job properties except include a patch that fails to apply.
+    $patch_path = url('', array('absolute' => TRUE)) . drupal_get_path('module', 'worker') . '/tests';
+    $patch_url_4 = $patch_path . '/test-fail.patch';
+    $properties['patch'][$patch_url_4] = 'test';
+    $this->checkCommand2($properties);
+    $this->checkPatch2($properties);
+    $this->checkLog2($properties);
   }
 
   protected function getProperties() {
     // Set the sample patch url.
-    $patch_url = url('', array('absolute' => TRUE)) . drupal_get_path('module', 'worker') . '/tests/test-readme.patch';
-    sdp($patch_url, '$patch_url');
+    $patch_path = url('', array('absolute' => TRUE)) . drupal_get_path('module', 'worker') . '/tests';
+    $patch_url_1 = $patch_path . '/test-readme.patch';
+    $patch_url_2 = $patch_path . '/test-module.patch';
+    $patch_url_3 = $patch_path . '/test-syntax.patch';
 
     // Create the conduit server tracking item.
     $item = new stdClass();
@@ -114,28 +121,28 @@ class WorkerPropertyTestCase extends WorkerTestCase {
 
     // Create the job properties array.
     $properties = array(
-  //     'verbose' => TRUE,
       'verbose' => FALSE,
-      'database' => 'mysql',
-      'version' => 7,
+      'context' => 3, // Not applicable for the execute plugin.
+      'database' => 'mysql', // Not applicable for the execute plugin.
+      'version' => 7, // Not applicable for the execute plugin.
       'plugin' => 'execute', // 'scan',
       'command' => 'echo "hello world 2day"',
 
       'path' => array(
-  //       'modules',
+//         'modules',
 //         'index.php',
-        '',
+        'test',
       ),
       'mask' => '/\.(php|inc|install|module|test)$/',
       'nomask' => '/(\.\.?|CVS)$/',
 
       'setup' => array(
-  //       'bzr launchpad-login boombatower',
+//         'bzr launchpad-login boombatower',
       ),
       'variables' => array(
       ),
       'newline' => 'unix',
-  //     'newline' => 'any',
+//       'newline' => 'any',
 
       'ssh' => array(
         array(
@@ -147,70 +154,53 @@ class WorkerPropertyTestCase extends WorkerTestCase {
       ),
       'vcs' => array(
         'test' => 'git://git@github.com:boombatower/test.git/master',
-  //       '' => 'cvs://:pserver:anonymous:anonymous@cvs.drupal.org:/cvs/drupal:drupal:HEAD',
+//         '' => 'cvs://:pserver:anonymous:anonymous@cvs.drupal.org:/cvs/drupal:drupal:HEAD',
 //         'sites/default/modules/pifr' => 'cvs://:pserver:anonymous:anonymous@cvs.drupal.org:/cvs/drupal-contrib:contributions/modules/project_issue_file_review:HEAD',
 //         'simpletest' => 'cvs://:pserver:anonymous:anonymous@cvs.drupal.org:/cvs/drupal-contrib:contributions/modules/simpletest:DRUPAL-7--2',
-  //       'pifr' => 'cvs://:pserver:anonymous:anonymous@cvs.drupal.org:/cvs/drupal-contrib:contributions/modules/project_issue_file_review:HEAD',
+//         'pifr' => 'cvs://:pserver:anonymous:anonymous@cvs.drupal.org:/cvs/drupal-contrib:contributions/modules/project_issue_file_review:HEAD',
 //         'conduit' => 'git://git@github.com:boombatower/conduit.git/master',
-  //       'conduit2' => 'git://git://github.com/boombatower/conduit.git/master',
-  //       'conduit' => 'git[git://github.com/boombatower/conduit.git/master]',
-  //       'examiner' => 'bzr://lp:~examiner-dev/examiner/trunk',
-  //       'googlecl' => 'svn://http://googlecl.googlecode.com/svn/trunk',
+//         'conduit2' => 'git://git://github.com/boombatower/conduit.git/master',
+//         'conduit' => 'git[git://github.com/boombatower/conduit.git/master]',
+//         'examiner' => 'bzr://lp:~examiner-dev/examiner/trunk',
+//         'googlecl' => 'svn://http://googlecl.googlecode.com/svn/trunk',
       ),
       'patch' => array(
-        $patch_url => 'test',
-  //       'http://drupal.org/files/issues/565808-ajax-replace-comments.patch' => '',
-  //       'http://drupal.org/files/issues/drupal.system-index.243.patch' => '',
-  //       'http://drupal.org/files/issues/simpleTestRunner_WindowsFix_XmlSupport_1.diff' => '', // Non-unix line endings.
+        $patch_url_1 => 'test',
+        $patch_url_2 => 'test',
+        $patch_url_3 => 'test',
+//         'http://drupal.org/files/issues/565808-ajax-replace-comments.patch' => '',
+//         'http://drupal.org/files/issues/drupal.system-index.243.patch' => '',
+//         'http://drupal.org/files/issues/simpleTestRunner_WindowsFix_XmlSupport_1.diff' => '', // Non-unix line endings.
       ),
 
       'item' => $item,
-      'context' => 3,
     );
 
     return $properties;
   }
 
-  protected function checkDatabase(array $properties) {}
-  protected function checkVersion(array $properties) {}
-
   protected function checkPlugin(array $properties) {
-//     $properties = array(
-//       'database' => 'mysql',
-//       'version' => 7,
-//       'plugin' => 'dscan',
-//     );
     // Ensure that the job plugin can be loaded.
     $plugin = worker_plugins_get('worker', $properties['plugin']);
     $this->assertNotNull($plugin, 'Plugin is not NULL');
-    if ($plugin = worker_plugins_get('worker', $properties['plugin'])) {
-      sdp($plugin, '$plugin');
-      // @todo Move this assertion to worker_drupal test.
-//       $this->assertEqual($plugin['title'], 'Drupal scan', 'Plugin title is "Drupal scan."');
+    if ($plugin) {
       $this->assertEqual($plugin['title'], 'Execute', 'Plugin title is "Execute."');
     }
   }
 
-  protected function checkVerbose(array $properties) {}
-
   protected function checkCommand(array $properties) {
-//     $properties['verbose'] = TRUE;
     $results = worker_perform($properties);
     $this->assertEqual('success', $results['status'], 'Command execution status is "success."');
     $this->assertEqual(substr($properties['command'], 6, -1), $results['result'][0], 'Command result is "' . substr($properties['command'], 6, -1) . '."');
-    sdp($results, '$results');
-    sdp(substr($properties['command'], 7, -1), 'command');
   }
 
   protected function checkScope(array $properties) {}
   protected function checkSetup(array $properties) {}
-  protected function checkVariables(array $properties) {}
 
   protected function checkSSH(array $properties) {}
 
   protected function checkVCS(array $properties) {
     foreach ($properties['vcs'] as $path => $repository) {
-      sdp($path, '$path');
       $this->assertTrue(is_dir(JOB_ROOT . '/' . $path), "Directory exists for repository to be stored at path '$path.'");
       switch ($path) {
         case 'conduit':
@@ -222,21 +212,53 @@ class WorkerPropertyTestCase extends WorkerTestCase {
           $module = substr($path, strrpos($path, '/')) . '.module';
           break;
       }
-      sdp($module, '$module');
       $this->assertTrue(file_exists(JOB_ROOT . '/' . $path . '/' . $module), "Module file '$module' exists in directory.");
     }
   }
 
   protected function checkPatch(array $properties) {
+    // Check readme patch.
     $readme = file_get_contents(JOB_ROOT . '/test/README');
-    sdp($readme, '$readme');
-    $this->assertEqual($readme, "sample text that has been modified\n", 'Patch was applied to README in conduit directory.');
+    $this->assertEqual($readme, "sample text that has been modified\n", 'Patch was applied to README in job/test directory.');
+
+    // Check module patches.
+    $module = file_get_contents(JOB_ROOT . '/test/test.module');
+    $found = strpos($module, 'function test_init()');
+    $this->assertTrue($found !== FALSE, 'Patch 1 was applied to test.module in job/test directory.');
+    $found = strpos($module, 'The next line fails the syntax check');
+    $this->assertTrue($found !== FALSE, 'Patch 2 was applied to test.module in job/test directory.');
   }
 
-//     protected function check(array $properties) {}
-//     protected function check(array $properties) {}
-//     protected function check(array $properties) {}
-//     protected function check(array $properties) {}
+  protected function checkLog($properties) {
+    $log_file = DRUPAL_ROOT . '/' . file_directory_path() . '/job.log';
+    $log = file_get_contents($log_file);
+    // Check module patches.
+    $found = preg_match('@Apply test-module\.patch to /test\.\s+\[\s+\d+\.\d+\] Modified files:\s+ > test\.module@', $log);
+    $this->assertTrue($found == 1, 'Patch 1 was applied to test.module in job/test directory.');
+    $found = preg_match('@Apply test-syntax\.patch to /test\.\s+\[\s+\d+\.\d+\] Modified files:\s+ > test\.module@', $log);
+    $this->assertTrue($found == 1, 'Patch 2 was applied to test.module in job/test directory.');
+    // Confirm second patch produces invalid syntax.
+    $errors = worker_syntax($properties);
+  }
+
+  protected function checkCommand2(array $properties) {
+    $results = worker_perform($properties);
+  }
+
+  protected function checkPatch2(array $properties) {
+    // Check module patches.
+    $module = file_get_contents(JOB_ROOT . '/test/test.module');
+    $found = strpos($module, 'This patch fails because the context line numbers are off');
+    $this->assertTrue($found === FALSE, 'Patch 3 was not applied to test.module in job/test directory.');
+  }
+
+  protected function checkLog2($properties) {
+    $log_file = DRUPAL_ROOT . '/' . file_directory_path() . '/job.log';
+    $log = file_get_contents($log_file);
+    // Confirm third patch failed to apply.
+    $found = strpos($log, 'Failed to apply patch test-fail.patch.');
+    $this->assertTrue($found !== FALSE, 'Patch 3 failed to apply to test.module in job/test directory.');
+  }
 }
 
 /**

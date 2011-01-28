@@ -27,7 +27,7 @@ function worker_drush_command() {
     ),
     'options' => array(
       '--report' => 'Report the result to the conduit server.',
-      '--summary' => 'Indead of the standard output print only a summary.',
+      '--summary' => 'Instead of the standard output print only a summary.',
     ),
     'aliases' => array('wp'),
   );
@@ -35,7 +35,7 @@ function worker_drush_command() {
     'description' => 'Check the status of the worker requirements.',
     'aliases' => array('wr'),
     'options' => array(
-      '--summary' => 'Indead of the standard output print only passed or failed.',
+      '--summary' => 'Instead of the standard output print only passed or failed.',
     ),
   );
   $items['worker-status'] = array(
