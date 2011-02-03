@@ -52,9 +52,8 @@ function worker_drush_command() {
 function worker_drush_init() {
   // When not displaying help information define constants.
   if (!func_get_args() && module_exists('worker')) {
-    define('DRUSH_WORKER_CONF_PATH', realpath(conf_path()));
-    define('DRUSH_WORKER_JOB', realpath(file_directory_path()) . '/job.php');
-    define('DRUSH_WORKER_ERROR', realpath(file_directory_path()) . '/error.log');
+    define('DRUSH_WORKER_JOB', file_directory_path() . '/job.php');
+    define('DRUSH_WORKER_ERROR', file_directory_path() . '/error.log');
     define('DRUSH_WORKER_MONITOR', 10);
   }
 }
@@ -94,7 +93,7 @@ function drush_worker_cron() {
       // Start the monitor process (-1) which will start the worker process.
       worker_include('job');
       drupal_static('worker_execute_background', -2);
-      drush_worker_execute_background('drush worker-monitor');
+      worker_execute_background('drush worker-monitor');
     }
   }
 }
@@ -108,7 +107,7 @@ function drush_worker_monitor() {
 
   // Start the worker process (-2).
   drupal_static('worker_execute_background', -3);
-  $number = drush_worker_execute_background('drush worker-perform --report --summary ' . DRUSH_WORKER_JOB . ' 2> ' . DRUSH_WORKER_ERROR);
+  $number = worker_execute_background('drush worker-perform --report --summary ' . DRUSH_WORKER_JOB . ' 2> ' . DRUSH_WORKER_ERROR);
 
   // Monitor the worker until it has completed.
   while (!worker_execute_background_done($number)) {
@@ -122,18 +121,6 @@ function drush_worker_monitor() {
     $properties = drush_worker_perform_load(DRUSH_WORKER_JOB);
     worker_rest_result($properties['item'], FALSE, FALSE, $error);
   }
-}
-
-/**
- * Ensure that drush commands are executed in the same config path.
- *
- * @see worker_execute_background()
- */
-function drush_worker_execute_background($command) {
-  // Change directory to the current config path to ensure that drush executes
-  // the command in the current site and not the default.
-  $command = 'cd ' . DRUSH_WORKER_CONF_PATH . "\n$command";
-  worker_execute_background($command);
 }
 
 /**
