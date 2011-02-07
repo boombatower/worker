@@ -227,8 +227,6 @@ function drush_worker_status() {
  *   TRUE if the worker is busy, otherwise FALSE.
  */
 function drush_worker_status_busy() {
-  // If no 'monitor' process is running then the worker is idle. Two processes
-  // will always exist so we need more to be considered busy.
-  drush_shell_exec('ps aux | grep "drush worker-monitor"');
-  return count(drush_shell_exec_output()) > 2;
+  worker_include('job');
+  return !worker_execute_background_done(-1);
 }
