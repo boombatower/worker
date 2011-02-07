@@ -139,12 +139,10 @@ function worker_perform(array $properties) {
 function worker_prepare(array $properties) {
   // Ensure the job root directory is available.
   if (!worker_directory_prepare()) {
-    worker_log('Failed to prepare job root directory.');
     return FALSE;
   }
 
   if (!worker_setup($properties)) {
-    worker_log('Failed to complete execution of setup commands.');
     return FALSE;
   }
 
@@ -176,7 +174,11 @@ function worker_directory_prepare($directory = JOB_ROOT) {
   }
 
   // Create directory.
-  return file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+  if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
+    worker_log('Failed to prepare job root directory.');
+    return FALSE;
+  }
+  return TRUE;
 }
 
 /**
@@ -193,6 +195,7 @@ function worker_setup(array $properties) {
   foreach ($properties['setup'] as $command) {
     worker_log('Setup [' . $command . '].');
     if (!worker_execute(escapeshellcmd($command))) {
+      worker_log('Failed to complete execution of setup commands.');
       return FALSE;
     }
   }
@@ -271,6 +274,7 @@ function worker_vcs(array $properties) {
       // Checkout from the repository.
       worker_log('Checkout ' . $url . ' into /' . $path . '.');
       if (!$vcs['checkout']($url)) {
+        worker_log('Failed to checkout ' . $url . '.');
         return FALSE;
       }
 
@@ -279,7 +283,7 @@ function worker_vcs(array $properties) {
       chdir(DRUPAL_ROOT);
     }
     else {
-      worker_log('Unsupported scheme in [' . $url . '].');
+      worker_log('Unsupported scheme in ' . $url . '.');
       return FALSE;
     }
   }
