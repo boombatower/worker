@@ -753,7 +753,7 @@ function worker_execute_concurrent(array $commands, $sleep = 1000000, $concurren
       if (worker_execute_background_done($process)) {
         unset($processes[$key]);
         $log[$key] = microtime(TRUE) - $start;
-        worker_log('> Finished ' . $key . ' in ' . number_format($log[$key], 2) . '.');
+        worker_log('> Finished ' . $key . ' in ' . number_format($log[$key], 2) . ' seconds.');
       }
     }
 
