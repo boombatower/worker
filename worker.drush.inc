@@ -93,7 +93,7 @@ function drush_worker_cron() {
       // Start the monitor process (-1) which will start the worker process.
       worker_include('job');
       drupal_static('worker_execute_background', -2);
-      worker_execute_background('drush worker-monitor');
+      worker_execute_background('drush worker-monitor', 'drush worker-cron');
     }
   }
 }

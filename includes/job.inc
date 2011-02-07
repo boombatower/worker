@@ -685,18 +685,23 @@ function worker_execute_output($command, $capture_stderr = TRUE) {
  * @param $command
  *   Script to be placed in file and executed in the background. The script may
  *   span multiple lines since it will be written to a file.
+ * @param $done
+ *   (Optional) Command(s) to be executed after $command has been completed.
+ *   Note that the background process will be considered done by
+ *   worker_execute_background_done() and the related script file will have
+ *   been deleted before any commands in $done are executed.
  * @return
  *   The process number to use with worker_execute_background_done().
  * @see worker_execute_background_done()
  * @see worker_execute_concurrent()
  */
-function worker_execute_background($command) {
+function worker_execute_background($command, $done = NULL) {
   $number = &drupal_static(__FUNCTION__, 0);
   $file = FILE_ROOT . '/process.' . ++$number;
   // Add command to delete the script file after $command finishes so we can
   // test the file's existence in worker_execute_background_done().
-  file_put_contents($file, "$command\nrm $file");
-  shell_exec("nohup sh $file > /dev/null 2> /dev/null &");
+  file_put_contents($file, "$command\nrm $file\n$done");
+  shell_exec("sh $file > /dev/null 2> /dev/null &"); // @TODO remove nohup?
   return $number;
 }
 
