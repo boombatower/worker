@@ -119,7 +119,7 @@ function drush_worker_monitor() {
   // If the worker crashed due to a fatal error report the error.
   if ($error = trim(file_get_contents(DRUSH_WORKER_ERROR))) {
     $properties = drush_worker_perform_load(DRUSH_WORKER_JOB);
-    worker_rest_result($properties['item'], FALSE, FALSE, $error);
+    worker_rest_result($properties['item'], FALSE, 'Worker crashed', $error);
   }
 }
 
