@@ -137,27 +137,16 @@ function worker_perform(array $properties) {
  * @see worker_perform() for a description of the properties array.
  */
 function worker_prepare(array $properties) {
-  // Ensure the job root directory is available.
   if (!worker_directory_prepare()) {
     return FALSE;
   }
 
-  if (!worker_setup($properties)) {
-    return FALSE;
+  foreach (array('setup', 'ssh', 'vcs', 'patch') as $action) {
+    $function  = 'worker_' . $action;
+    if (!$function($properties)) {
+      return FALSE;
+    }
   }
-
-  if (!worker_ssh($properties)) {
-    return FALSE;
-  }
-
-  if (!worker_vcs($properties)) {
-    return FALSE;
-  }
-
-  if (!worker_patch($properties)) {
-    return FALSE;
-  }
-
   return TRUE;
 }
 
