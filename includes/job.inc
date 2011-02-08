@@ -181,14 +181,16 @@ function worker_directory_prepare($directory = JOB_ROOT) {
  * @see worker_perform() for a description of the properties array.
  */
 function worker_setup(array $properties) {
+  worker_chdir();
+  $success = TRUE;
   foreach ($properties['setup'] as $command) {
     worker_log('Setup [' . $command . '].');
-    if (!worker_execute(escapeshellcmd($command))) {
-      worker_log('Failed to complete execution of setup commands.');
-      return FALSE;
-    }
+    $success = worker_execute(escapeshellcmd($command)) && $success;
   }
-  return TRUE;
+  chdir(DRUPAL_ROOT);
+
+  if (!$success) worker_log('Failed to complete execution of setup commands.');
+  return $success;
 }
 
 /**
