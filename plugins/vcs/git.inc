@@ -35,7 +35,7 @@ function worker_git_checkout($url) {
   $url = substr($url, 0, -1 * strlen($branch) + 1);
   $url = escapeshellarg($url);
 
-  return worker_execute("git clone -b $branch $url .");
+  return worker_execute("git clone --depth 1 -b $branch $url .");
 }
 
 /**
