@@ -21,6 +21,9 @@ $plugin = array(
  *   Result of the command run.
  */
 function worker_execute_perform(array $properties) {
+  worker_chdir();
   worker_log('Execute ' . $properties['command'] . '.');
-  return worker_execute_output($properties['command']);
+  $return = worker_execute_output($properties['command']);
+  chdir(DRUPAL_ROOT);
+  return is_array($return) ? implode("\n", $return) : $return;
 }
