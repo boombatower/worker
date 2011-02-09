@@ -95,6 +95,12 @@ function drush_worker_cron() {
       drupal_static('worker_execute_background', -2);
       worker_execute_background('drush worker-monitor', 'drush worker-cron');
     }
+    else {
+      // If there are no job available then perform the worker_idle command.
+      if ($command = variable_get('worker_idle')) {
+        worker_execute_background($command);
+      }
+    }
   }
 }
 
