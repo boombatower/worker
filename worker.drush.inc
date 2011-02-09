@@ -96,9 +96,16 @@ function drush_worker_cron() {
       worker_execute_background('drush worker-monitor', 'drush worker-cron');
     }
     else {
-      // If there are no job available then perform the worker_idle command.
-      if ($command = variable_get('worker_idle')) {
-        worker_execute_background($command);
+      if (variable_get('worker_halt')) {
+        // Check the length of uptime and shut the machine down if within the
+        // last four minutes of an hour. Taking into account that machine
+        // reservation time and boot time may take up to two minutes and
+        // shutdown make take a minute or two this ensure the box stays within
+        // whole hour time blocks.
+        preg_match('/up\s+\d+:(\d+)/', current(worker_execute_output('uptime')), $match);
+        if ($match[1] >= 56) {
+          worker_execute_background('sudo halt');
+        }
       }
     }
   }
