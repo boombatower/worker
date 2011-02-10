@@ -159,6 +159,7 @@ function worker_prepare(array $properties) {
 function worker_directory_prepare($directory = JOB_ROOT) {
   // If directory exists then clear it out.
   if (file_exists($directory)) {
+    worker_execute('chmod -R 755 ' . escapeshellarg($directory));
     worker_delete_recursive($directory);
   }
 
