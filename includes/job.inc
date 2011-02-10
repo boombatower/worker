@@ -18,7 +18,7 @@ define('JOB_ROOT', FILE_ROOT . '/job');
 /**
  * Absolute URL to the job directory.
  */
-define('JOB_URL', url('', array('absolute' => TRUE)) . 'job');
+define('JOB_URL', 'http://worker.loc');
 
 /**
  * Perform the given job.
