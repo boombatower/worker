@@ -474,7 +474,7 @@ function worker_syntax(array $properties, $callback = 'worker_syntax_php') {
   $length = $properties['context'] * 2 + 1;
   $errors = array();
   foreach ($files as $file) {
-    if ($properties['verbose']) worker_log('> Check ' . $file . '.');
+    if (worker_verbose()) worker_log('> Check ' . $file . '.');
     if ($error = $callback($file)) {
       // Continue if the file passed the syntax check.
       if ($error === TRUE) {
