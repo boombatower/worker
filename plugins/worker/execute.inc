@@ -25,5 +25,5 @@ function worker_execute_perform(array $properties) {
   worker_log('Execute ' . $properties['command'] . '.');
   $return = worker_execute_output($properties['command']);
   chdir(DRUPAL_ROOT);
-  return is_array($return) ? implode("\n", $return) : $return;
+  return array(TRUE, implode("\n", $return));
 }

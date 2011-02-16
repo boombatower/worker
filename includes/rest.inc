@@ -25,11 +25,15 @@ function worker_rest_claim() {
 /**
  * Store a result for an item.
  *
+ * @param $item
+ *   Queue item related to result.
+ * @param $result
+ *   Associative array containing the result (status, result, log).
  * @return
  *   TRUE if successfull, otherwise FALSE.
  */
-function worker_rest_result($item, $pass, $result, $log) {
-  if ($response = worker_rest_post('item/result', array('item' => $item, 'pass' => $pass, 'result' => $result, 'log' => $log))) {
+function worker_rest_result($item, $result) {
+  if ($response = worker_rest_post('item/result', array('item' => $item) + $result)) {
     if ($response->code == 200) {
       return json_decode($response->data);
     }

@@ -159,7 +159,7 @@ function drush_worker_perform($file) {
   if (drush_get_option('report')) {
     // Report the result to the conduit server.
     worker_include('rest');
-    worker_rest_result($properties['item'], $result && $result['status'] == 'success', $result['result'], $result['log']);
+    worker_rest_result($properties['item'], $result);
   }
 
   if (drush_get_option('summary')) {

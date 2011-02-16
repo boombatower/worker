@@ -21,6 +21,21 @@ define('JOB_ROOT', FILE_ROOT . '/job');
 define('JOB_URL', 'http://worker.loc');
 
 /**
+ * Status of job: failed during setup.
+ */
+define('WORKER_STATUS_SETUP', 1);
+
+/**
+ * Status of job: plugin encountered a failure.
+ */
+define('WORKER_STATUS_FAIL', 2);
+
+/**
+ * Status of job: pluging passed.
+ */
+define('WORKER_STATUS_PASS', 3);
+
+/**
  * Perform the given job.
  *
  * Inital cleanup from last job run -- delete job dir, prepare new directory
@@ -75,14 +90,14 @@ define('JOB_URL', 'http://worker.loc');
  *       surrounding an error (failed assertion|parse error) to return.
  *
  * @return
- *   The result of the job or FALSE.
+ *   Associative array containing the job result (status, result, log).
  */
 function worker_perform(array $properties) {
   // Initialize result so that the default status returned is failure unless
   // the plugin was found, the worker successfully prepared, and the plugin
   // executed with a success return value.
   $result = array(
-    'status' => 'failure',
+    'status' => 1,
     'result' => NULL,
   );
 
@@ -91,23 +106,17 @@ function worker_perform(array $properties) {
   worker_log('Start job ' . number_format($data['nid']) . '.' . number_format($data['vid']) . '.' . number_format($data['delta']) . '.');
   worker_verbose($properties['verbose']);
 
-  // Ensure that the job plugin can be loaded.
-  if ($plugin = worker_plugins_get('worker', $properties['plugin'])) {
-    // Perform preparation and then job.
-    if (worker_prepare($properties)) {
-      // Ensure the working directory is set to the DRUPAL_ROOT and invoke the
-      // plugin with the job properties.
-      chdir(DRUPAL_ROOT);
-      if ($result['result'] = $plugin['perform']($properties)) {
-        $result['status'] = 'success';
-      }
-    }
+  // Ensure that the job plugin can be loaded, prepare the environment, and
+  // invoke the plugin to perform.
+  if (($plugin = worker_plugins_get('worker', $properties['plugin'])) && worker_prepare($properties)) {
+    list($pass, $result['result']) = $plugin['perform']($properties);
+    $result['status'] += $pass ? 2 : 1;
 
-    // In case worker_prepare() or $plugin['perform']() fail ensure the working
-    // directory is reset so Drupal functions properly.
+    // In case worker_prepare() or $plugin['perform']() crash ensure the
+    // working directory is reset so Drupal functions properly.
     chdir(DRUPAL_ROOT);
   }
-  else {
+  elseif (!$plugin) {
     worker_log('Invalid plugin ' . $properties['plugin'] . '.');
   }
   worker_log('Exit job.');
@@ -119,7 +128,7 @@ function worker_perform(array $properties) {
 
   // If the job was a failure then use the second to last line from the log as
   // the error message after trimming off the time offset.
-  if ($result['status'] == 'failure') {
+  if ($result['status'] == WORKER_STATUS_SETUP) {
     array_pop($log);
     $result['result'] = substr(array_pop($log), 13);
   }
