@@ -863,7 +863,7 @@ function worker_log_last($log = NULL) {
   if (!$log) $log = file(file_directory_path() . '/job.log', FILE_IGNORE_NEW_LINES);
 
   // Return last message from log after trimming off the time offset.
-  if ($log) return substr(array_pop($log), 13);
+  if ($log) return ltrim(substr(array_pop($log), 13), '> ');
 
   return 'Failed to extract last log message.';
 }
