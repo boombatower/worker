@@ -153,6 +153,7 @@ function worker_prepare(array $properties) {
   foreach (array('setup', 'ssh', 'vcs', 'patch') as $action) {
     $function  = 'worker_' . $action;
     if (!$function($properties)) {
+      chdir(DRUPAL_ROOT);
       return FALSE;
     }
   }
