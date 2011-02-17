@@ -18,7 +18,8 @@ $plugin = array(
  * @param $properties
  *   Associative array of properties defining the job.
  * @return
- *   Result of the command run.
+ *   An array containing a boolean for pass/fail and the result. The result is
+ *   the result of the command that was executed.
  */
 function worker_execute_perform(array $properties) {
   worker_chdir();
