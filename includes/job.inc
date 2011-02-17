@@ -123,14 +123,14 @@ function worker_perform(array $properties) {
 
   // Load log file contents as an array so the second to last line can be
   // accessed if necessary.
-  $log = file(file_directory_path() . '/job.log');
-  $result['log'] = implode('', $log);
+  $log = file(file_directory_path() . '/job.log', FILE_IGNORE_NEW_LINES);
+  $result['log'] = implode("\n", $log);
 
   // If the job was a failure then use the second to last line from the log as
   // the error message after trimming off the time offset.
   if ($result['status'] == WORKER_STATUS_SETUP) {
     array_pop($log);
-    $result['result'] = substr(array_pop($log), 13);
+    $result['result'] = worker_log_last($log);
   }
   return $result;
 }
@@ -847,6 +847,24 @@ function worker_log($string) {
  */
 function worker_log_list($string, $list) {
   worker_log($string . "\n > " . implode("\n > ", $list));
+}
+
+/**
+ * Get the last message from the log.
+ *
+ * @param $log
+ *   (Optional) Array containing the lines of log file instead of loading.
+ * @return
+ *   Last message in log.
+ */
+function worker_log_last($log = NULL) {
+  // If no log was passed then attempt to load log from file.
+  if (!$log) $log = file(file_directory_path() . '/job.log', FILE_IGNORE_NEW_LINES);
+
+  // Return last message from log after trimming off the time offset.
+  if ($log) return substr(array_pop($log), 13);
+
+  return 'Failed to extract last log message.';
 }
 
 /**
