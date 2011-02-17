@@ -498,12 +498,13 @@ function worker_syntax(array $properties, $callback = 'worker_syntax_php') {
       // If the line referenced by the message was determined then pull the
       // relevant lines from the file as context.
       if ($error['line']) {
-        $lines = file($file);
+        $lines = file($file, FILE_IGNORE_NEW_LINES);
         $errors[$file]['context'] = array_slice($lines, $error['line'] - $properties['context'] - 1, $length, TRUE);
       }
     }
     else {
       worker_log('Syntax check did not respond properly.');
+      chdir(DRUPAL_ROOT);
       return FALSE;
     }
   }
