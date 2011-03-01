@@ -53,6 +53,7 @@ function worker_drush_init() {
   // When not displaying help information define constants.
   if (!func_get_args() && module_exists('worker')) {
     define('DRUSH_WORKER_JOB', file_directory_path() . '/job.php');
+    define('DRUSH_WORKER_LOG', file_directory_path() . '/job.log');
     define('DRUSH_WORKER_ERROR', file_directory_path() . '/error.log');
     define('DRUSH_WORKER_MONITOR', 10);
   }
@@ -132,7 +133,16 @@ function drush_worker_monitor() {
   // If the worker crashed due to a fatal error report the error.
   if ($error = trim(file_get_contents(DRUSH_WORKER_ERROR))) {
     $properties = drush_worker_perform_load(DRUSH_WORKER_JOB);
-    worker_rest_result($properties['item'], FALSE, 'Worker crashed', $error);
+    $result = array(
+      'status' => WORKER_STATUS_SETUP,
+      'result' => 'Worker crashed',
+      'log' => $error,
+      'duration' => drush_worker_duration(DRUSH_WORKER_JOB),
+    );
+    if (file_exists(DRUSH_WORKER_LOG)) {
+      $result['log'] = trim(file_get_contents(DRUSH_WORKER_LOG)) . "\n\n" . str_repeat('=', 80) . "\n\n" . $result['log'];
+    }
+    worker_rest_result($properties['item'], $result);
   }
 }
 
@@ -155,6 +165,7 @@ function drush_worker_perform($file) {
   // Perform job.
   worker_include('job');
   $result = worker_perform($properties);
+  $result['duration'] = drush_worker_duration($file);
 
   if (drush_get_option('report')) {
     // Report the result to the conduit server.
@@ -242,4 +253,11 @@ function drush_worker_status() {
 function drush_worker_status_busy() {
   worker_include('job');
   return !worker_execute_background_done(-1);
+}
+
+/**
+ * Get the length of time elapsed since the job information was retrieved.
+ */
+function drush_worker_duration($file) {
+  return time() - filemtime($file);
 }

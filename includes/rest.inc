@@ -28,7 +28,7 @@ function worker_rest_claim() {
  * @param $item
  *   Queue item related to result.
  * @param $result
- *   Associative array containing the result (status, result, log).
+ *   Associative array containing the result (status, result, log, duration).
  * @return
  *   TRUE if successfull, otherwise FALSE.
  */
