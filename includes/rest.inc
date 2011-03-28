@@ -73,7 +73,7 @@ function worker_rest_post($path, $data, $session = TRUE) {
 
   // If the session cookie was requested and the request returned 401
   // (Unauthorized) then renew the session and perform the request again.
-  if ($session && $response->code == 401) {
+  if ($session && $response->code == 401 && strpos($response->error, 'Unauthorized: Access denied for user 0') !== FALSE) {
     watchdog('worker', 'Conduit session expired.');
     worker_rest_session(TRUE);
     $response = worker_rest_post($path, $data);
