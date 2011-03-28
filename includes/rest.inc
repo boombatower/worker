@@ -78,6 +78,9 @@ function worker_rest_post($path, $data, $session = TRUE) {
     worker_rest_session(TRUE);
     $response = worker_rest_post($path, $data);
   }
+  elseif ($response->code != 200) {
+    watchdog('worker', '@path: !message', array('@path' => $path, '!message' => $response->error));
+  }
   return $response;
 }
 
