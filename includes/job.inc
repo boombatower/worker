@@ -150,7 +150,7 @@ function worker_prepare(array $properties) {
     return FALSE;
   }
 
-  foreach (array('setup', 'ssh', 'vcs', 'patch') as $action) {
+  foreach (array('setup', 'ssh', 'vcs', 'patch', 'build') as $action) {
     $function  = 'worker_' . $action;
     if (!$function($properties)) {
       chdir(DRUPAL_ROOT);
@@ -191,17 +191,29 @@ function worker_directory_prepare($directory = JOB_ROOT) {
  *
  * @see worker_perform() for a description of the properties array.
  */
-function worker_setup(array $properties) {
+function worker_setup(array $properties, $type = 'setup') {
   worker_chdir();
   $success = TRUE;
-  foreach ($properties['setup'] as $command) {
-    worker_log('Setup [' . $command . '].');
+  foreach ($properties[$type] as $command) {
+    worker_log(ucfirst($type) . ': `' . $command . '`');
     $success = worker_execute(escapeshellcmd($command)) && $success;
   }
   chdir(DRUPAL_ROOT);
 
-  if (!$success) worker_log('Failed to complete execution of setup commands.');
+  if (!$success) worker_log("Failed to complete execution of $type commands.");
   return $success;
+}
+
+/**
+ * Allow commands to be run after source has been setup, but before plugin.
+ *
+ * @param $properties
+ *   Associative array of job properties.
+ * @return
+ *   TRUE if successfull, otherwise FALSE.
+ */
+function worker_build(array $properties) {
+  return worker_setup($properties, 'build');
 }
 
 /**
