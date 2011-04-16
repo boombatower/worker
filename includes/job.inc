@@ -97,7 +97,7 @@ function worker_perform(array $properties) {
   // the plugin was found, the worker successfully prepared, and the plugin
   // executed with a success return value.
   $result = array(
-    'status' => 1,
+    'status' => WORKER_STATUS_SETUP,
     'result' => NULL,
   );
 
