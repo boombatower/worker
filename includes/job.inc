@@ -720,7 +720,7 @@ function worker_execute_background($command, $done = NULL) {
   // Add command to delete the script file after $command finishes so we can
   // test the file's existence in worker_execute_background_done().
   file_put_contents($file, "$command\nrm $file\n$done");
-  shell_exec("sh $file > /dev/null 2> /dev/null &"); // @TODO remove nohup?
+  shell_exec("sh $file > /dev/null 2> /dev/null &");
   return $number;
 }
 
