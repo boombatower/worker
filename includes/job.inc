@@ -93,6 +93,11 @@ define('WORKER_STATUS_PASS', 3);
  *   Associative array containing the job result (status, result, log).
  */
 function worker_perform(array $properties) {
+  // Preload all plugins before access to code is revoked.
+  worker_plugins_get_all('database');
+  worker_plugins_get_all('vcs');
+  worker_plugins_get_all('worker');
+
   // Initialize result so that the default status returned is failure unless
   // the plugin was found, the worker successfully prepared, and the plugin
   // executed with a success return value.
