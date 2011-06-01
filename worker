@@ -16,7 +16,7 @@ rc_reset
 case "$1" in
   start)
     echo 'Starting worker deamon'
-      cd /srv/www/htdocs
+      cd /srv/worker
       drush wdeamon wwwrun < /dev/null > /dev/null 2>&1 &
       rc_status -v
     ;;
