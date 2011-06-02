@@ -98,6 +98,9 @@ function worker_perform(array $properties) {
   worker_plugins_get_all('vcs');
   worker_plugins_get_all('worker');
 
+  // Allow other modules to preload any additional files.
+  module_invoke_all('worker_preload');
+
   // Initialize result so that the default status returned is failure unless
   // the plugin was found, the worker successfully prepared, and the plugin
   // executed with a success return value.
