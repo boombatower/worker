@@ -205,7 +205,7 @@ function worker_setup(array $properties, $type = 'setup') {
   foreach ($properties[$type] as $command) {
     // Append < /dev/null as input stream to ensure commands do not block
     // waiting for user input.
-    worker_log(ucfirst($type) . ': `' . $command . '`');
+    worker_log(ucfirst($type) . ': `' . $command . '`.');
     $success = worker_execute(escapeshellcmd($command) . ' < /dev/null') && $success;
   }
   chdir(DRUPAL_ROOT);
