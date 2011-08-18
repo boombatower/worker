@@ -372,21 +372,26 @@ function worker_patch(array $properties) {
  * @param $directory
  *   Directory to place file in.
  * @param $suffix
- *   Suffix to append to the local name of the file.
+ *   (Optional) Suffix to append to the local name of the file. (defaults to '')
  * @return
  *   Local path to file, or FALSE if retrieval/storage failed.
  */
 function worker_fetch($url, $directory, $suffix = '') {
-  // Request the file at the given URL.
-  $response = drupal_http_request($url); // @TODO Possibly allow for non-http protocols.
-  if ($response->code != 200) {
-    worker_log('Unable to fetch ' . $url . ' due to [' . $response->error . '].');
+  // Override error handler so error_get_last() works.
+  set_error_handler(function() { return false; });
+  $contents = @file_get_contents($url);
+  restore_error_handler();
+
+  if ($contents === FALSE) {
+    // Load error message and skip the function call portion.
+    $error = error_get_last();
+    worker_log('Unable to fetch ' . $url . ' due to [' . substr($error['message'], strpos($error['message'], ':') + 2) . '].');
     return FALSE;
   }
 
   // Save the file contents in the given directory.
   $local = $directory . '/' . basename($url) . $suffix;
-  if (file_put_contents($local, $response->data) === FALSE) {
+  if (file_put_contents($local, $contents) === FALSE) {
     worker_log('Failed to save file data to ' . $local . '.');
     return FALSE;
   }
