@@ -823,25 +823,26 @@ function worker_chdir($directory = '') {
  *
  * @param $path
  *   Path to directory or file that will be recursively deleted.
+ * @return
+ *   TRUE if successfull, otherwise FALSE.
  */
 function worker_delete_recursive($path) {
   if (is_dir($path)) {
     // Cycle through all entries in directory and recursively remove them.
     $files = scandir($path);
+    $status = TRUE;
     foreach ($files as $file) {
       if ($file != '.' && $file != '..') {
-        worker_delete_recursive($path . '/' . $file);
+        $status = worker_delete_recursive($path . '/' . $file) && $status;
       }
     }
 
     // Remove the directory itself.
-    rmdir($path);
+    return rmdir($path) && $status;
   }
-  else {
-    // Do not check if the file exists since the check may fail if the file is
-    // a symbolic link and the file should always exist.
-    unlink($path);
-  }
+  // Do not check if the file exists since the check may fail if the file is
+  // a symbolic link and the file should always exist.
+  return unlink($path);
 }
 
 /**
