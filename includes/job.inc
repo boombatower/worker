@@ -7,6 +7,7 @@
  */
 
 /**
+ * Absolute path to file directory.
  */
 define('FILE_ROOT', DRUPAL_ROOT . '/' . file_directory_path());
 
