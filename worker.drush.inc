@@ -101,12 +101,14 @@ function drush_worker_log() {
  * Reset the worker in case of catastrophic crash.
  */
 function drush_worker_reset() {
-  $files = file_scan_directory(file_directory_path(), '/process\..*/', array('recurse' => FALSE));
-  foreach ($files as $file) {
-    if (!file_unmanaged_delete($file->uri)) {
-      drush_set_error('reset_failed', dt('Failed to remove @file.', array('@file' => $file->filename)), 'error');
-    }
+  // Check to ensure the file_directory_path() is defined so that /* is not
+  // accidentally removed instead.
+  if (file_directory_path()) {
+    system('rm -rf ' . file_directory_path() . '/*', $status);
+    return $status == 0;
   }
+  drush_set_error('reset_failed', dt('Failed to remove clear files directory.'), 'error');
+  return FALSE;
 }
 
 /**
@@ -166,8 +168,7 @@ function drush_worker_deamon($user) {
       // Kill all processes owned by $user and reset the worker to ensure
       // nothing is left between jobs.
       exec('killall -w -u ' . escapeshellarg($user));
-      drush_worker_reset();
-      if ($monitor) drush_log(dt('Cleaned environment'), 'success');
+      if ($monitor) drush_log(dt('Cleaned environment.'), drush_worker_reset() ? 'success' : 'error');
     }
     elseif (variable_get('worker_halt') && preg_match('/up\s+\d+:(\d+)/', current(worker_execute_output('uptime')), $match) && $match[1] >= 56) {
       // Check the length of uptime and halt the machine if within the last four
