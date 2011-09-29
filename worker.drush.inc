@@ -93,7 +93,7 @@ function drush_worker_status() {
  * A refreshing job log display
  */
 function drush_worker_log() {
-  $rows = preg_match('/rows (\d+);/', shell_exec('stty -a'), $match) ? (int) $match[1] : 40;
+  $rows = preg_match('/rows (\d+);/', shell_exec('stty -a'), $match) ? (int) $match[1] - 2 : 40;
   passthru("watch tail -n $rows " . escapeshellarg(DRUSH_WORKER_LOG));
 }
 
