@@ -139,7 +139,10 @@ function drush_worker_deamon_validate($user = NULL) {
 function drush_worker_deamon($user) {
   worker_include('job');
   worker_include('rest');
+
+  $debug = drush_get_option('debug');
   $monitor = drush_get_option('monitor');
+
   if ($monitor) drush_log(dt('User to perform jobs as: @user.', array('@user' => $user)), 'success');
 
   // Loop until the process is terminated or a halt is called.
@@ -168,7 +171,13 @@ function drush_worker_deamon($user) {
       // Kill all processes owned by $user and reset the worker to ensure
       // nothing is left between jobs.
       exec('killall -w -u ' . escapeshellarg($user));
-      if ($monitor) drush_log(dt('Cleaned environment.'), drush_worker_reset() ? 'success' : 'error');
+
+      // If running in debug mode do not reset worker to ensure that files are
+      // available to look through.
+      if (!$debug) {
+        $reset = drush_worker_reset();
+        if ($monitor) drush_log(dt('Cleaned environment.'), $reset ? 'success' : 'error');
+      }
     }
     elseif (variable_get('worker_halt') && preg_match('/up\s+\d+:(\d+)/', current(worker_execute_output('uptime')), $match) && $match[1] >= 56) {
       // Check the length of uptime and halt the machine if within the last four
