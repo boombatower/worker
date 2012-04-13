@@ -58,9 +58,9 @@ function worker_rest_result($item, $result) {
 function worker_rest_post($path, $data, $session = TRUE) {
   // Setup drupal_http_request() options.
   $options = array(
-    'headers' => array('Content-Type' => 'application/x-www-form-urlencoded'),
+    'headers' => array('Content-Type' => 'application/json'),
     'method' => 'POST',
-    'data' => http_build_query($data, '', '&'),
+    'data' => json_encode($data),
   );
 
   // If requested, attempt to include session cookie header.
