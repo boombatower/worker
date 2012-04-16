@@ -33,7 +33,7 @@ function worker_drush_command() {
       'user' => 'The user which should be used to perform the job (ex. wwwrun). Should not be the same as the user running the deamon.',
     ),
     'options' => array(
-      '--monitor' => 'Print monitoring information about what the deamon is doing.',
+      'monitor' => 'Print monitoring information about what the deamon is doing.',
     ),
     'aliases' => array('wdeamon'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_SITE,
@@ -44,8 +44,8 @@ function worker_drush_command() {
       'file' => 'A PHP file containing the job properties array defined as $properties in the global namespace.',
     ),
     'options' => array(
-      '--report' => 'Report the result to the conduit server.',
-      '--summary' => 'Instead of the standard output print only a summary.',
+      'report' => 'Report the result to the conduit server.',
+      'summary' => 'Instead of the standard output print only a summary.',
     ),
     'aliases' => array('wperform'),
   );
@@ -53,7 +53,7 @@ function worker_drush_command() {
     'description' => 'Check the status of the worker requirements.',
     'aliases' => array('wrequirements'),
     'options' => array(
-      '--summary' => 'Instead of the standard output print only passed or failed.',
+      'summary' => 'Instead of the standard output print only passed or failed.',
     ),
   );
 
